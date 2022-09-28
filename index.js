@@ -2,6 +2,7 @@
 const e = require('express')
 const express = require('express')
 const uuid = require('uuid')
+const crypto = require('crypto')
 const wss = require('lup-express-ws').default(express())
 const app = wss.app
 const config = require("./config_handler").config
@@ -101,13 +102,16 @@ function become_potted_plant(user) {
     return
   }
   user.isAdmin = true
-  user.name = "Basil"
+  // user.name = "Basil"
 
   on_new_admin(user)
   
   send_to(user,{
     n: "user_update",
-    d: { isAdmin: true, name: "Basil" }
+    d: {
+      isAdmin: true,
+      // name: "Basil",
+    }
   })
 }
 
@@ -205,12 +209,29 @@ app.ws("/", function(client_ws, req){
         break
 
       case "auth":
-        if (data == config.admin_key) {
-          become_potted_plant(client)
-        } else if (data == config.mod_key) {
-          become_mod(client)
-        } else {
-          send_to(client,{n: "system_message", d: {items: [{text: namegen.deny()}]}})
+        if (typeof data === 'string') {
+          if (crypto.timingSafeEqual(Buffer.from(data),Buffer.from(config.admin_key))) {
+            become_potted_plant(client)
+          } else if (crypto.timingSafeEqual(Buffer.from(data),Buffer.from(config.mod_key))) {
+            become_mod(client)
+          } else {
+            send_to(client,{n: "system_message", d: {items: [{text: namegen.deny()}]}})
+          }
+        }
+        break
+
+      case "change_name":
+        if (typeof data === 'string') {
+          if (data.length <= 32) {
+            client.name = data
+            send_to(client,{
+              n: "user_update",
+              d: { name: data }
+            })
+            // send_to(client,{n: "system_message", d: {items: [{text: `Your name is now ${data}`}]}})
+          } else {
+            send_to(client,{n: "system_message", d: {items: [{text: `Name is too long.`}]}})
+          }
         }
         break
 

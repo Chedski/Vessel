@@ -291,6 +291,15 @@ function send(content) {
           socket.send(JSON.stringify({n: "auth", d: args}))
           return
         }
+      case "nick":
+        if (args == '') {
+          system_message(qspan(`Syntax: /nick <nickname>`))
+          system_message(qspan(`Changes your nickname.`))
+          return
+        } else {
+          socket.send(JSON.stringify({n: "change_name", d: args}))
+          return
+        }
       default:
         system_message(qspan(`The command /${cmd} was not found.`))
     }
