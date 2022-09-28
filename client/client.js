@@ -18,7 +18,12 @@ adminSound.volume = 1
 const main_room_id = "27b9bef4-ffb7-451e-b010-29870760e2b1"
 const shout_room_id = "823d68d9-a20c-409e-b6db-12e313ed9a16"
 
-var socket = new ReconnectingWebSocket('ws://localhost:8692',[],{automaticOpen: false})
+var socket_url = 'ws://localhost:8692'
+if (window.location.hash) {
+  socket_url = window.location.hash
+}
+
+var socket = new ReconnectingWebSocket(socket_url,[],{automaticOpen: false})
 
 function qspan(text,...classes) {
   if (classes[0] instanceof Array) { classes = classes[0] }
