@@ -143,7 +143,9 @@ function user_can_speak_in_room(user,room) {
   }
 }
 
-app.ws("/", function(client_ws, req){
+
+
+app.ws("/ev", function(client_ws, req){
   var client = {
     rooms: [main_room],
     socket: client_ws,
@@ -266,6 +268,8 @@ app.ws("/", function(client_ws, req){
     }
   });
 });
+
+app.use("/", express.static("client"))
 
 app.listen(config.port)
 console.log("listening")

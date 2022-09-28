@@ -18,7 +18,9 @@ adminSound.volume = 1
 const main_room_id = "27b9bef4-ffb7-451e-b010-29870760e2b1"
 const shout_room_id = "823d68d9-a20c-409e-b6db-12e313ed9a16"
 
-var socket_url = 'ws://localhost:8692'
+// Automatically generate the websocket URL from the current page
+var socket_url = `${window.location.protocol == "https:"?"wss":"ws"}://${window.location.host}${window.location.pathname}${window.location.pathname.endsWith("/")?"":"/"}ev`
+
 if (window.location.hash) {
   socket_url = window.location.hash
 }
