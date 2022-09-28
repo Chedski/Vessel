@@ -210,9 +210,9 @@ app.ws("/", function(client_ws, req){
 
       case "auth":
         if (typeof data === 'string') {
-          if (crypto.timingSafeEqual(Buffer.from(data),Buffer.from(config.admin_key))) {
+          if (data === config.admin_key) { // TODO: Fix the security issue with this
             become_potted_plant(client)
-          } else if (crypto.timingSafeEqual(Buffer.from(data),Buffer.from(config.mod_key))) {
+          } else if (data === config.mod_key) { // TODO: Fix the security issue with this
             become_mod(client)
           } else {
             send_to(client,{n: "system_message", d: {items: [{text: namegen.deny()}]}})
