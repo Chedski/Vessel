@@ -1,0 +1,5 @@
+# Vessel Configuration
+
+admin_key: ADMIN_CHANGEME # basil key
+mod_key: MOD_CHANGEME # mod key
+port: 8692

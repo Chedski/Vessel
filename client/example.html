@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title id="title">Chat test</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet"> 
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+  </head>
+  <body>
+    <div id="message_holder">
+      <div class="message user other"><span class="username">yeehaw: </span><span class="message_txt">active user other</span></div>
+      <div class="message user me"><span class="username">augh: </span><span class="message_txt">active self</span></div>
+      <div class="message user other admin"><span class="username"><span class="material-icons txt_icon">eco</span> Basil: </span><span class="message_txt">its an active message from me :3</span></div>
+      <div class="message user other mod"><span class="username"><span class="material-icons txt_icon">security</span> fuwwy: </span><span class="message_txt">its an active message from a mod :3</span></div>
+      <div class="message user me dm"><span class="room_name"><span class="material-icons txt_icon">person</span> To </span><span class="username">hamger: </span><span class="message_txt">dm outgoing</span></div>
+      <div class="message user other dm"><span class="room_name"><span class="material-icons txt_icon">person</span> From </span><span class="username">hamger: </span><span class="message_txt">dm incoming</span></div>
+      <div class="message user me dm"><span class="room_name"><span class="material-icons txt_icon">person</span> To </span><span class="username admin_username"><span class="material-icons txt_icon">eco</span> Basil: </span><span class="message_txt">dm me</span></div>
+      <div class="message user me dm"><span class="room_name"><span class="material-icons txt_icon">person</span> To </span><span class="username mod_username"><span class="material-icons txt_icon">security</span> fuwwy: </span><span class="message_txt">dm mod</span></div>
+      <div class="message user other inactive"><span class="room_name">Main &gt; </span><span class="username">cheese master: </span><span class="message_txt">inactive user other</span></div>
+      <div class="message user other admin inactive"><span class="room_name">Main &gt; </span><span class="username"> <span class="material-icons txt_icon">eco</span> Basil: </span><span class="message_txt">its a regular message from me :3</span></div>
+      <div class="message user other mod inactive"><span class="room_name">Main &gt; </span><span class="username"> <span class="material-icons txt_icon">security</span> fuwwy: </span><span class="message_txt">its a regular message from a mod :3</span></div>
+      <div class="message user other shout admin">
+        <span class="room_name"><span class="material-icons txt_icon">campaign</span> Shout &gt; </span><span class="username"> <span class="material-icons txt_icon">eco</span> Basil: </span><span class="message_txt">its a shout from me :3</span>
+      </div>
+      <div class="message user other shout mod">
+        <span class="room_name"><span class="material-icons txt_icon">campaign</span> Shout &gt; </span><span class="username"> <span class="material-icons txt_icon">security</span> fuwwy: </span><span class="message_txt">its a shout from a mod :3</span>
+      </div>
+      <div class="message system">
+        <span class="systemtag"><span class="material-icons txt_icon">settings</span> System &gt; </span><span class="username other_username">yeehaw</span> has been removed from <span class="room_name">furry rp 7</span>.
+      </div>
+      <div class="message system">
+        <span class="systemtag"><span class="material-icons txt_icon">settings</span> System &gt; </span>You have been removed from <span class="room_name">cheese factory</span>.
+      </div>
+      <div class="message system">
+        <span class="systemtag"><span class="material-icons txt_icon">settings</span> System &gt; </span>Your active room is now <span class="room_name">Main</span>.
+      </div>
+      <div class="message system">
+        <span class="systemtag"><span class="material-icons txt_icon">settings</span> System &gt; </span>Your active room is now <span class="username other_username"><span class="material-icons txt_icon">person</span> hamger</span>.
+      </div>
+      <div class="message system">
+        <span class="systemtag"><span class="material-icons txt_icon">settings</span> System &gt; </span><span class="username admin_username"><span class="material-icons txt_icon">eco</span> Basil</span> added 69 users to <span class="room_name">Main</span>.
+      </div>
+      <div class="message system">
+        <span class="systemtag"><span class="material-icons txt_icon">settings</span> System &gt; </span><span class="username mod_username"><span class="material-icons txt_icon">security</span> fuwwy</span> added 69 users to <span class="room_name">Main</span>.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> was obliterated.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> faced divine judgement.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> was struck by the banhammer.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> got the bad ending.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> mined at night.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> was sent to Twitter.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> got S L A P P E D .
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> put toast butter-side down.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> did not get the banana.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> tried to be cool and failed.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The user <span class="username other_username">cringer</span> tried to be based.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The public room <span class="room_name">hell itself</span> has been nuked from orbit.
+      </div>
+      <div class="message system nuke">
+        <span class="systemtag"><span class="material-icons txt_icon">gavel</span> </span>The public room <span class="room_name">hell itself</span> experienced a bobm.
+      </div>
+      <div class="message system newadmin">
+        <span class="systemtag"><span class="material-icons txt_icon">construction</span> </span>The user <span class="username mod_username"><span class="material-icons txt_icon">security</span> fuwwy</span> has passed the vibe check and is now a global administrator.
+      </div>
+    </div>
+  </body>
+</html>
