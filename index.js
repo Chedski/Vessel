@@ -11,14 +11,14 @@ const namegen = require('./namegen')
 
 const main_room = {
   id: "27b9bef4-ffb7-451e-b010-29870760e2b1",
-  name: 'Main',
+  name: config.main_channel_name,
   members: [],
   muted: {}
 }
 
 const shout_room = {
   id: "823d68d9-a20c-409e-b6db-12e313ed9a16",
-  name: 'Shouts',
+  name: config.shout_channel_name,
   adminOnly: true,
   disableRoommates: true,
   preventLeaving: true,

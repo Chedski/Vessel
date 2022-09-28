@@ -1,5 +1,21 @@
 # Vessel Configuration
 
+# Available access types:
+# - all: Any user can create rooms of this type
+# - mod: Mods and admins can create rooms of this type
+# - admin: Only admins can create rooms of this type
+# - none: Rooms of this type cannot be created
+
+# Default rooms
+main_channel_name: "Main"
+shout_channel_name: "Shouts"
+
+# Room creation
+allow_room_creation: true # Turning this off will completely disable room creation
+room_creation_public: "mod" # Rooms that are visible to all clients and can be joined by name
+room_creation_unlisted: "all" # Rooms that are invisible but can be joined by UUID
+
+# Other
 admin_key: "" # Leave as an empty string to use the ADMINKEY environment variable
 mod_key: "" # Leave as an empty string to use the MODKEY environment variable
 port: 8692

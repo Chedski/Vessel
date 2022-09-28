@@ -2,7 +2,7 @@
 const fs = require('fs');
 const yaml = require('js-yaml');
 
-/** @type {{admin_key:string, mod_key:string, port:number}} */
+/** @type {{admin_key:string, mod_key:string, main_channel_name:string, shout_channel_name:string port:number}} */
 // @ts-ignore
 var config = yaml.load(fs.readFileSync('./config.yml').toString())
 
