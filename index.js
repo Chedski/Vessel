@@ -1,7 +1,7 @@
 // @ts-check
-const e = require('express')
 const express = require('express')
 const uuid = require('uuid')
+const http = require('http')
 const crypto = require('crypto')
 const wss = require('lup-express-ws').default(express())
 const app = wss.app
@@ -15,6 +15,8 @@ const main_room = {
   isPublic: true,
   isMain: true,
   autoJoin: true,
+  disableJoinMessages: true,
+  disableLeaveMessages: true,
   preventDeletion: true,
   members: [],
   muted: {}
@@ -27,6 +29,8 @@ const shout_room = {
   isShout: true,
   isPublic: true,
   autoJoin: true,
+  disableJoinMessages: true,
+  disableLeaveMessages: true,
   disableRoommates: true,
   preventLeaving: true,
   preventDeletion: true,
@@ -49,8 +53,10 @@ function send_to_all(data) {
   clients.forEach(c=>c.socket.send(s))
 }
 function send_to_members(room,data) {
-  var s = JSON.stringify(data)
-  room.members.forEach(c=>c.socket.send(s))
+  if (room) {
+    var s = JSON.stringify(data)
+    room.members.forEach(c=>c.socket.send(s))
+  }
 }
 function send_to_roommates(user,data) {
   var targets = {}
@@ -160,6 +166,18 @@ function add_user_to_room(user,room,initial) {
   if (room.members.some((u) => u == user)) {
     send_to(user,{n: "system_message", d: {loginHide: true, items: [{text: `You are already a member of that room.`}]}})
     return
+  }
+
+  if (!room.disableJoinMessages) {
+    send_to_members(room,{n: "system_message", d: {
+      loginHide: true,
+      items: [
+        {text: 'The user '},
+        {type: "user", user: get_client_user_data(user)},
+        {text: ' has joined '},
+        {type: "room", room: get_client_room_data(room,user)},
+        {text: '.'}
+      ]}})
   }
 
   // @ts-ignore
@@ -284,7 +302,9 @@ app.ws("/ev", function(client_ws, req){
       } else {
         client.id = uuid.v4()
       }
-      client.name = data.user.name
+      if (data.user.name.length <= 32 && data.user.name.length >= 1) {
+        client.name = data.user.name
+      }
     } else {
       client.id = uuid.v4()
       client.name = namegen.gen()
@@ -359,7 +379,7 @@ app.ws("/ev", function(client_ws, req){
   /** @param {String} data */
   function request_change_name(data) {
     if (typeof data === 'string') {
-      if (data.length <= 32) {
+      if (data.length <= 32 && data.length >= 1) {
         client.name = data
         send_to(client,{
           n: "user_update",
@@ -477,7 +497,22 @@ app.ws("/ev", function(client_ws, req){
   });
 });
 
-app.use("/", express.static("client"))
+(async () => {
+  var got = await import('got')
+  app.get("/twemoji.js", (req,res) => {
+    // https://twemoji.maxcdn.com/v/latest/twemoji.min.js
+    // @ts-ignore
+    got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js").then((val) => {
+      res.setHeader("Content-Type","text/javascript")
+      res.send(val.body)
+    }).catch((err) => {
+      res.sendStatus(500)
+      console.log(err)
+    })
+  })
+  app.use("/", express.static("client"))
+  app.listen(config.port)
+  console.log("listening")
+})()
 
-app.listen(config.port)
-console.log("listening")
+

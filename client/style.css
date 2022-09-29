@@ -83,15 +83,25 @@ a {
   color: #8cc784;
 }
 
-.mediaholder video, .mediaholder audio {
+.mediaholder video, .mediaholder audio, .mediaholder img {
   max-height: 320px;
+  max-width: 80%;
+  width: auto;
+  height: auto;
   border-radius: 3px;
 }
 
 .mediaholder {
+  max-height: 320px;
+  overflow: hidden;
   margin-top: 8px;
   margin-bottom: 4px;
   margin-left: 35px;
+}
+
+.emoji {
+  height: 14pt;
+  transform: translate(0,3px);
 }
 
 #preload_icons {

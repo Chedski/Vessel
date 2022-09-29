@@ -115,7 +115,7 @@ function md(mdText) {
   }
   
   
-  return mdHTML.trim()
+  return mdHTML
 }
 
 /**
@@ -145,6 +145,7 @@ function qspan(text, ...classes) {
   var span = document.createElement("span")
   classes.forEach((c) => { span.classList.add(c) })
   span.innerText = text
+  try { twemoji.parse(span,{folder:'svg',ext:'.svg'}) } catch(err) { /*console.log(err)*/ }
   return span
 }
 /**
@@ -157,6 +158,7 @@ function qspan_md(text, ...classes) {
   var span = document.createElement("span")
   classes.forEach((c) => { span.classList.add(c) })
   span.innerHTML = md(text)//.replace(/\n/g,"")).replace(/^<p>/,"").replace(/<\/p>$/,"")
+  try { twemoji.parse(span,{folder:'svg',ext:'.svg'}) } catch(err) { /*console.log(err)*/ }
   return span
 }
 
@@ -170,12 +172,12 @@ function username_span(target, add_colon) {
   if (target.isAdmin) {
     should_add_space = true
     span.classList.add("admin_username")
-    span.appendChild(qicon("eco"))
+    span.appendChild(qicon("security"))
   }
   else if (target.isMod) {
     should_add_space = true
     span.classList.add("mod_username")
-    span.appendChild(qicon("security"))
+    span.appendChild(qicon("shield"))
   }
 
   var txt = target.name
@@ -242,7 +244,7 @@ function room_span(target, add_arrow) {
 function add_to_holder(node) {
   var holder = document.getElementById("message_holder")
   var current_scroll = (holder.scrollHeight - holder.clientHeight)
-  var should_scroll = current_scroll == holder.scrollTop
+  var should_scroll = current_scroll >= (holder.scrollTop - 100)
 
   holder.appendChild(node)
 
@@ -280,6 +282,7 @@ function build_system_message(classes, icon, ...parts) {
 // regex stuff
 const videoLinkRegex = /(.mp4|.mov|.webm|.avi)$/g
 const audioLinkRegex = /(.mp3|.m4a|.ogg|.wav|.flac)$/g
+const imageLinkRegex = /(.png|.gif|.jpg|.jpeg|.webp)$/g
 
 // Messages
 
@@ -370,6 +373,17 @@ function display_user_message(message) {
           d2.classList.add("mediaholder")
           div.appendChild(d2)
           embeds++
+  
+        } else if (link[0].match(imageLinkRegex)) {
+          /** @type {HTMLImageElement} */
+          var image = document.createElement('img')
+          image.src = link[0]
+  
+          var d2 = document.createElement("div")
+          d2.appendChild(image)
+          d2.classList.add("mediaholder")
+          div.appendChild(d2)
+          embeds++
         }
       }
     })
@@ -377,14 +391,21 @@ function display_user_message(message) {
   add_to_holder(div);
 }
 
-
+// topbar
+function update_topbar() {
+  document.getElementById("active_room_name").replaceChildren(room_span(user.active_room))
+  document.getElementById("nickname").replaceChildren(username_span(user))
+  document.getElementById("active_room_name").hidden = false
+  document.getElementById("nickname").hidden = false
+  document.getElementById("titlebar_sep").hidden = false
+}
 
 // Room stuff
 function set_active_room(room) {
   user.active_room = room
 
 
-  document.getElementById("active_room_name").replaceChildren(room_span(room))
+  update_topbar()
 
   if (!logging_in) { icon_message("swap_horiz", qspan("Your active room is now "), room_span(user.active_room), qspan(".")) }
   // icon_message("signpost",qspan("Your active room is now "),room_span(user.active_room),qspan("."))
@@ -796,7 +817,7 @@ socket.onmessage = (real_event) => {
     case "user_update":
       var keys = Object.keys(data)
       keys.forEach((k) => { user[k] = data[k] })
-
+      update_topbar()
       if (keys.includes("name")) {
         icon_message("edit", qspan('Your nickname is now '), username_span(user), qspan('.'))
         document.getElementById("title").innerText = `Vessel (${user.name})`
@@ -840,10 +861,10 @@ socket.onmessage = (real_event) => {
       break
     
     case "login_done":
-      socket.send(JSON.stringify({ n: "get_online_user_list", d: "" }))
       if (session_data.auth_key) {
         command_auth(session_data.auth_key)
       }
+      socket.send(JSON.stringify({ n: "get_online_user_list", d: "" }))
       if (session_data.room_access) {
         Object.keys(session_data.room_access).forEach((id) => {
           if (session_data.room_access[id]) {
@@ -958,8 +979,10 @@ socket.onmessage = (real_event) => {
 function loading_done() {
   //system_message(qspan(`Connecting to server ${socket_url}`))
   setTimeout(socket.open, 1000)
-  document.body.addEventListener("keydown", ({ key }) => {
-    document.getElementById("message_content").focus()
+  document.body.addEventListener("keydown", (event) => {
+    if (!(event.ctrlKey && event.key != "V") && !event.metaKey && !event.altKey && event.key != "Shift") {
+      document.getElementById("message_content").focus()
+    }
   })
   document.getElementById("message_content").addEventListener("keyup", ({ key, shiftKey }) => {
     if (key === "Enter" && !shiftKey) {
