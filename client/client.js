@@ -337,7 +337,10 @@ function send(content) {
         if (args != '') {
           socket.send(JSON.stringify({ n: "auth", d: args }))
           return
+        } else {
+          system_message(qspan(`The command /${cmd} was not found.`))
         }
+        return
       case "nick":
         if (args == '') {
           system_message(qspan(`Syntax: /nick <nickname>`))
