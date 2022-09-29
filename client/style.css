@@ -70,6 +70,39 @@ body {
   font-size: 11pt;
 }
 
+code {
+  background: #14141477;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-family: 'Oxygen Mono', 'Ubuntu Mono', monospace !important;
+  font-weight: 300 !important;
+  font-size: 10pt;
+}
+
+a {
+  color: #8cc784;
+}
+
+.mediaholder video, .mediaholder audio, .mediaholder img {
+  max-height: 320px;
+  max-width: 80%;
+  width: auto;
+  height: auto;
+  border-radius: 3px;
+}
+
+.mediaholder {
+  max-height: 320px;
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  margin-left: 35px;
+}
+
+.emoji {
+  height: 14pt;
+  transform: translate(0,3px);
+}
 
 #preload_icons {
   margin: 10px;
