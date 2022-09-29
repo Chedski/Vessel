@@ -172,7 +172,7 @@ function add_user_to_room(user,room,initial) {
     send_to_members(room,{n: "system_message", d: {
       loginHide: true,
       items: [
-        {text: 'The user '},
+        // {text: 'The user '},
         {type: "user", user: get_client_user_data(user)},
         {text: ' has joined '},
         {type: "room", room: get_client_room_data(room,user)},
@@ -192,7 +192,20 @@ function add_user_to_room(user,room,initial) {
 
 function remove_user_from_room(user,room,is_logout) {
   room.members = room.members.filter(u => (u != user))
+
   user.rooms = user.rooms.filter(r => (r != room))
+  if (!room.disableLeaveMessages) {
+    send_to_members(room,{n: "system_message", d: {
+      loginHide: true,
+      items: [
+        // {text: 'The user '},
+        {type: "user", user: get_client_user_data(user)},
+        {text: ' has left '},
+        {type: "room", room: get_client_room_data(room,user)},
+        {text: '.'}
+      ]}})
+  }
+
   if (!is_logout) {
     user.socket.send(JSON.stringify({
       n: "removed_from_room",
