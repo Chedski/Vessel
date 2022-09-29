@@ -7,6 +7,9 @@ var user = {
 }
 var rooms = {}
 
+const january_proxy_url = "https://chedski.net/january/proxy?url="
+const january_embed_url = "https://chedski.net/january/embed?url="
+
 var session_data = {
   auth_key: null,
   nickname: null,
@@ -318,6 +321,100 @@ function new_admin(who) {
   }
 }
 
+
+/**
+ * @param {Node} holder
+ * @param {Node} node
+ */
+function add_to_div(holder,node) {
+  var mholder = document.getElementById("message_holder")
+  var current_scroll = (mholder.scrollHeight - mholder.clientHeight)
+  var should_scroll = current_scroll >= (mholder.scrollTop - 100)
+
+  holder.appendChild(node)
+
+  if (should_scroll) {
+    mholder.style.scrollBehavior = "auto"
+    mholder.scrollTop = (mholder.scrollHeight - mholder.clientHeight)
+    mholder.style.scrollBehavior = "smooth"
+  }
+}
+
+/**
+ * @param {HTMLDivElement} message_div
+ * @param {RegExpMatchArray[]} links
+ */
+function display_embeds(message_div,links) {
+  return new Promise((resolve,reject) => {
+
+    var duplicates = {}
+    var embeds = 0
+    links.forEach(
+      /** @param {RegExpMatchArray} link */
+      (link) => {
+        if (!(embeds >= 3 || duplicates[link[0]])) {
+          duplicates[link[0]] = true
+          embeds++
+          var xhr = new XMLHttpRequest()
+          xhr.timeout = 15000
+          xhr.responseType = 'json'
+          xhr.addEventListener("load", () => {
+            var result = xhr.response
+            console.log(link[0])
+            console.log(result)
+            var url = result.url
+            var type = result.type
+            if (url && type) {
+              if (type == "Video") {
+                /** @type {HTMLVideoElement} */
+                var video = document.createElement('video')
+                video.preload = "metadata"
+                video.controls = true
+                video.autoplay = false
+                video.src = january_proxy_url + url
+                if (result.height) { video.height = Math.min(result.height,320) }
+        
+                var d2 = document.createElement("div")
+                d2.appendChild(video)
+                d2.classList.add("mediaholder")
+                add_to_div(message_div,d2)
+        
+              } else if (type == "Audio") {
+                /** @type {HTMLAudioElement} */
+                var audio = document.createElement('audio')
+                audio.preload = "none"
+                audio.controls = true
+                audio.autoplay = false
+                audio.src = january_proxy_url + url
+        
+                var d2 = document.createElement("div")
+                d2.appendChild(audio)
+                d2.classList.add("mediaholder")
+                add_to_div(message_div,d2)
+        
+              } else if (type == "Image") {
+                /** @type {HTMLImageElement} */
+                var image = document.createElement('img')
+                image.src = january_proxy_url + url
+                if (result.height) { image.height = Math.min(result.height,320) }
+        
+                var d2 = document.createElement("div")
+                d2.appendChild(image)
+                d2.classList.add("mediaholder")
+                add_to_div(message_div,d2)
+              }
+            }
+          })
+          xhr.addEventListener("error",(err) => {
+            console.log(err)
+          })
+          xhr.open("GET",january_embed_url + link[0])
+          xhr.send()
+        }
+      })
+  })
+}
+
 function display_user_message(message) {
   var div = document.createElement("div")
   div.classList.add("message", "user")
@@ -338,55 +435,7 @@ function display_user_message(message) {
   div.appendChild(qspan_md(message.content))
 
 
-  var links = getLinks(message.content)
-  var duplicates = {}
-  var embeds = 0
-  links.forEach(
-    /** @param {RegExpMatchArray} link */
-    (link) => {
-      if (embeds >= 3 || !duplicates[link[0]]) {
-        duplicates[link[0]] = true
-        if (link[0].match(videoLinkRegex)) {
-          /** @type {HTMLVideoElement} */
-          var video = document.createElement('video')
-          video.preload = "metadata"
-          video.controls = true
-          video.autoplay = false
-          video.src = link[0]
-  
-          var d2 = document.createElement("div")
-          d2.appendChild(video)
-          d2.classList.add("mediaholder")
-          div.appendChild(d2)
-          embeds++
-  
-        } else if (link[0].match(audioLinkRegex)) {
-          /** @type {HTMLAudioElement} */
-          var audio = document.createElement('audio')
-          audio.preload = "none"
-          audio.controls = true
-          audio.autoplay = false
-          audio.src = link[0]
-  
-          var d2 = document.createElement("div")
-          d2.appendChild(audio)
-          d2.classList.add("mediaholder")
-          div.appendChild(d2)
-          embeds++
-  
-        } else if (link[0].match(imageLinkRegex)) {
-          /** @type {HTMLImageElement} */
-          var image = document.createElement('img')
-          image.src = link[0]
-  
-          var d2 = document.createElement("div")
-          d2.appendChild(image)
-          d2.classList.add("mediaholder")
-          div.appendChild(d2)
-          embeds++
-        }
-      }
-    })
+  display_embeds(div,getLinks(message.content))
 
   add_to_holder(div);
 }
