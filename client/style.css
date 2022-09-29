@@ -89,6 +89,14 @@ a {
   width: auto;
   border-radius: 3px;
 }
+.mediaholder iframe {
+  width: 569px;
+  height: 320px;
+  border-radius: 3px;
+  border: none;
+  background-color: #111;
+}
+
 
 .mediaholder {
   overflow: hidden;

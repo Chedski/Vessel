@@ -402,6 +402,24 @@ function display_embeds(message_div,links) {
                 d2.appendChild(image)
                 d2.classList.add("mediaholder")
                 add_to_div(message_div,d2)
+              } else if (type == "Website" && result.special && result.special.type == "YouTube") {
+                /** @type {HTMLIFrameElement} */
+                var frame = document.createElement('iframe')
+                frame.allowFullscreen = true
+                frame.sandbox = "allow-scripts"
+                frame.src = "https://www.youtube.com/embed/" + result.special.id
+                if (result.video && result.video.height) {
+                  frame.height = Math.min(result.video.height,320)
+                  if (result.video.width) {
+                    frame.width = Math.ceil(result.video.width * (frame.height/result.video.height))
+                  }
+                }
+        
+                var d2 = document.createElement("div")
+                d2.appendChild(frame)
+                d2.classList.add("mediaholder")
+                add_to_div(message_div,d2)
+
               }
             }
           })
@@ -409,6 +427,9 @@ function display_embeds(message_div,links) {
             console.log(err)
           })
           xhr.open("GET",january_embed_url + link[0])
+          // xhr.withCredentials = false
+          // xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
+          // xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
           xhr.send()
         }
       })
