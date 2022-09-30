@@ -22,7 +22,7 @@ try {
   session_data.auth_key = sessionStorage.getItem("auth_key")
   session_data.active_room = sessionStorage.getItem("active_room")
   session_data.room_access = JSON.parse(sessionStorage.getItem("room_access")) || {}
-} catch(err) {
+} catch (err) {
   console.log(err)
 }
 
@@ -63,35 +63,35 @@ function md(mdText) {
 
   // first, handle syntax for code-block
   mdText = mdText.replace(/\r\n/g, '\n')
-  mdText = mdText.replace(/\n~~~ *(.*?)\n([\s\S]*?)\n~~~/g, '<pre><code title="$1">$2</code></pre>' )
-  mdText = mdText.replace(/\n``` *(.*?)\n([\s\S]*?)\n```/g, '<pre><code title="$1">$2</code></pre>' )
+  mdText = mdText.replace(/\n~~~ *(.*?)\n([\s\S]*?)\n~~~/g, '<pre><code title="$1">$2</code></pre>')
+  mdText = mdText.replace(/\n``` *(.*?)\n([\s\S]*?)\n```/g, '<pre><code title="$1">$2</code></pre>')
 
-  mdText = mdText.replace( /</g, "&lt;" )
-    .replace( />/g, "&gt;" )
-    .replace( /"/g, "&quot;" )
-    .replace( /'/g, "&#39;" )
+  mdText = mdText.replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
 
   // split by "pre>", skip for code-block and process normal text
   var mdHTML = ''
-  var mdCode = mdText.split( 'pre>')
+  var mdCode = mdText.split('pre>')
 
-  for (var i=0; i<mdCode.length; i++) {
-    if ( mdCode[i].substr(-2) == '</' ) {
+  for (var i = 0; i < mdCode.length; i++) {
+    if (mdCode[i].substr(-2) == '</') {
       mdHTML += '<pre>' + mdCode[i] + 'pre>'
     } else {
       mdHTML += mdCode[i].replace(/(.*)<$/, '$1')
-      .replace(/`(.*?)`/gm, '<code>$1</code>' )
-      .replace(/\[(.*?)\]\(\)/gm, '<a href="$1" target="_blank">$1</a>')
-      .replace(/\[(.*?)\]\((.*?)\)/gm, '<a href="$2" target="_blank">$1</a>')
-      .replace(/\*\*\*(.*)\*\*\*/gm, '<b><em>$1</em></b>')
-      .replace(/\*\*(.*)\*\*/gm, '<b>$1</b>')
-      .replace(/\*([\w \d]*)\*/gm, '<em>$1</em>')
-      .replace(/___(.*)___/gm, '<b><em>$1</em></b>')
-      .replace(/__(.*?)__/gm, '<u>$1</u>')
-      .replace(/~~(.*)~~/gm, '<del>$1</del>')
-      .replace(/\^\^(.*)\^\^/gm, '<ins>$1</ins>')
-      .replace(/\\([`_\\\*\+\-\.\(\)\[\]\{\}])/gm, '$1' )
-      .replace(/(?<!["'=])http(s?:\/\/[^ ?#]*\??[^ #]*?#?[^ ]*)/gm, '<a href="http$1">http$1</a>')
+        .replace(/`(.*?)`/gm, '<code>$1</code>')
+        .replace(/\[(.*?)\]\(\)/gm, '<a href="$1" target="_blank">$1</a>')
+        .replace(/\[(.*?)\]\((.*?)\)/gm, '<a href="$2" target="_blank">$1</a>')
+        .replace(/\*\*\*(.*)\*\*\*/gm, '<b><em>$1</em></b>')
+        .replace(/\*\*(.*)\*\*/gm, '<b>$1</b>')
+        .replace(/\*([\w \d]*)\*/gm, '<em>$1</em>')
+        .replace(/___(.*)___/gm, '<b><em>$1</em></b>')
+        .replace(/__(.*?)__/gm, '<u>$1</u>')
+        .replace(/~~(.*)~~/gm, '<del>$1</del>')
+        .replace(/\^\^(.*)\^\^/gm, '<ins>$1</ins>')
+        .replace(/\\([`_\\\*\+\-\.\(\)\[\]\{\}])/gm, '$1')
+        .replace(/(?<!["'=])http(s?:\/\/[^ ?#]*\??[^ #]*?#?[^ ]*)/gm, '<a href="http$1">http$1</a>')
       // .replace(/^##### (.*?)\s*#*$/gm, '<h5>$1</h5>')
       // .replace(/^#### (.*?)\s*#*$/gm, '<h4 id="$1">$1</h4>')
       // .replace(/^### (.*?)\s*#*$/gm, '<h3 id="$1">$1</h3>')
@@ -114,10 +114,10 @@ function md(mdText) {
       // .replace(/^ {4,10}(.*)/gm, '<pre><code>$1</code></pre>' )
       // .replace(/^\t(.*)/gm, '<pre><code>$1</code></pre>' )
       // .replace(/<\/code\><\/pre\>\n<pre\><code\>/g, '\n' )
-    }  
+    }
   }
-  
-  
+
+
   return mdHTML
 }
 
@@ -125,7 +125,7 @@ function md(mdText) {
  * @param {String} text
  * @returns {RegExpMatchArray[]}
  */
-function getLinks(text){
+function getLinks(text) {
   return Array.from(text.matchAll(/(?<!["'=])(https?:\/\/[^ ?#]*\??[^ #]*?#?[^ ]*)/gm))
 }
 
@@ -148,7 +148,7 @@ function qspan(text, ...classes) {
   var span = document.createElement("span")
   classes.forEach((c) => { span.classList.add(c) })
   span.innerText = text
-  try { twemoji.parse(span,{folder:'svg',ext:'.svg'}) } catch(err) { /*console.log(err)*/ }
+  try { twemoji.parse(span, { folder: 'svg', ext: '.svg' }) } catch (err) { /*console.log(err)*/ }
   return span
 }
 /**
@@ -161,7 +161,7 @@ function qspan_md(text, ...classes) {
   var span = document.createElement("span")
   classes.forEach((c) => { span.classList.add(c) })
   span.innerHTML = md(text)//.replace(/\n/g,"")).replace(/^<p>/,"").replace(/<\/p>$/,"")
-  try { twemoji.parse(span,{folder:'svg',ext:'.svg'}) } catch(err) { /*console.log(err)*/ }
+  try { twemoji.parse(span, { folder: 'svg', ext: '.svg' }) } catch (err) { /*console.log(err)*/ }
   return span
 }
 
@@ -188,7 +188,8 @@ function username_span(target, add_colon) {
   if (add_colon) { txt += ": " }
   var txt_span = qspan(txt)
   txt_span.onclick = () => {
-    navigator.clipboard.writeText(user.id)
+    try { navigator.clipboard.writeText(user.id) }
+    catch (err) { system_message(qspan(`Failed to copy ID: ${user.id}`)) }
     var ctxt = "(copied id)"
     if (should_add_space) { ctxt = " " + ctxt }
     if (add_colon) { ctxt += ": " }
@@ -215,11 +216,11 @@ function room_span(target, add_arrow) {
   } else if (target.isEncrypted) {
     should_add_space = true
     span.appendChild(qicon("lock"))
-    
+
   } else {
     // should_add_space = true
     // span.appendChild(qicon("lock"))
-    
+
   }
 
   var txt = target.name
@@ -229,7 +230,8 @@ function room_span(target, add_arrow) {
   var txt_span = qspan(txt)
 
   txt_span.onclick = () => {
-    navigator.clipboard.writeText(target.id)
+    try { navigator.clipboard.writeText(target.id) }
+    catch (err) { system_message(qspan(`Failed to copy ID: ${target.id}`)) }
     var ctxt = "(copied id)"
     if (should_add_space) { ctxt = " " + ctxt }
     if (add_arrow) { ctxt += " > " }
@@ -311,7 +313,7 @@ function new_admin(who) {
     )
     try {
       adminSound.play()
-    } catch(err) {
+    } catch (err) {
       console.log("couldn't play admin sound (probably auto auth)")
     }
   } else {
@@ -326,7 +328,7 @@ function new_admin(who) {
  * @param {Node} holder
  * @param {Node} node
  */
-function add_to_div(holder,node) {
+function add_to_div(holder, node) {
   var mholder = document.getElementById("message_holder")
   var current_scroll = (mholder.scrollHeight - mholder.clientHeight)
   var should_scroll = current_scroll >= (mholder.scrollTop - 100)
@@ -344,8 +346,8 @@ function add_to_div(holder,node) {
  * @param {HTMLDivElement} message_div
  * @param {RegExpMatchArray[]} links
  */
-function display_embeds(message_div,links) {
-  return new Promise((resolve,reject) => {
+function display_embeds(message_div, links) {
+  return new Promise((resolve, reject) => {
 
     var duplicates = {}
     var embeds = 0
@@ -372,13 +374,13 @@ function display_embeds(message_div,links) {
                 video.controls = true
                 video.autoplay = false
                 video.src = january_proxy_url + url
-                if (result.height) { video.height = Math.min(result.height,320) }
-        
+                if (result.height) { video.height = Math.min(result.height, 320) }
+
                 var d2 = document.createElement("div")
                 d2.appendChild(video)
                 d2.classList.add("mediaholder")
-                add_to_div(message_div,d2)
-        
+                add_to_div(message_div, d2)
+
               } else if (type == "Audio") {
                 /** @type {HTMLAudioElement} */
                 var audio = document.createElement('audio')
@@ -386,22 +388,22 @@ function display_embeds(message_div,links) {
                 audio.controls = true
                 audio.autoplay = false
                 audio.src = january_proxy_url + url
-        
+
                 var d2 = document.createElement("div")
                 d2.appendChild(audio)
                 d2.classList.add("mediaholder")
-                add_to_div(message_div,d2)
-        
+                add_to_div(message_div, d2)
+
               } else if (type == "Image") {
                 /** @type {HTMLImageElement} */
                 var image = document.createElement('img')
                 image.src = january_proxy_url + url
-                if (result.height) { image.height = Math.min(result.height,320) }
-        
+                if (result.height) { image.height = Math.min(result.height, 320) }
+
                 var d2 = document.createElement("div")
                 d2.appendChild(image)
                 d2.classList.add("mediaholder")
-                add_to_div(message_div,d2)
+                add_to_div(message_div, d2)
               } else if (type == "Website" && result.special && result.special.type == "YouTube") {
                 /** @type {HTMLIFrameElement} */
                 var frame = document.createElement('iframe')
@@ -409,24 +411,24 @@ function display_embeds(message_div,links) {
                 // frame.sandbox = "allow-scripts, allow-same-origin"
                 frame.src = "https://www.youtube.com/embed/" + result.special.id
                 if (result.video && result.video.height) {
-                  frame.height = Math.min(result.video.height,320)
+                  frame.height = Math.min(result.video.height, 320)
                   if (result.video.width) {
-                    frame.width = Math.ceil(result.video.width * (frame.height/result.video.height))
+                    frame.width = Math.ceil(result.video.width * (frame.height / result.video.height))
                   }
                 }
-        
+
                 var d2 = document.createElement("div")
                 d2.appendChild(frame)
                 d2.classList.add("mediaholder")
-                add_to_div(message_div,d2)
+                add_to_div(message_div, d2)
 
               }
             }
           })
-          xhr.addEventListener("error",(err) => {
+          xhr.addEventListener("error", (err) => {
             console.log(err)
           })
-          xhr.open("GET",january_embed_url + link[0])
+          xhr.open("GET", january_embed_url + link[0])
           // xhr.withCredentials = false
           // xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
           // xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
@@ -456,7 +458,7 @@ function display_user_message(message) {
   div.appendChild(qspan_md(message.content))
 
 
-  display_embeds(div,getLinks(message.content))
+  display_embeds(div, getLinks(message.content))
 
   add_to_holder(div);
 }
@@ -486,7 +488,7 @@ function set_active_room(room) {
 
   if (!logging_in) {
     session_data.active_room = room.id
-    try { sessionStorage.setItem("active_room",room.id) } catch(err) {console.log(err)}
+    try { sessionStorage.setItem("active_room", room.id) } catch (err) { console.log(err) }
   }
 }
 
@@ -507,7 +509,7 @@ function leave_room(room) {
     set_active_room(new_room)
   }
 
-  socket.send(JSON.stringify({ n: "leave_room", d: {id: room.id} }))
+  socket.send(JSON.stringify({ n: "leave_room", d: { id: room.id } }))
 }
 
 /**
@@ -536,18 +538,18 @@ function room_by_name(str) {
 
 /** @param {String} args */
 function command_help(args) {
-  icon_message("info",qspan(`Available commands:`))
-  icon_message("info",qspan(`/help - Shows this message.`))
-  icon_message("info",qspan(`/clear - Clears the screen.`))
-  icon_message("info",qspan(`/nick - Changes your nickname.`))
-  icon_message("info",qspan(`/c - Changes your active room (the one your messages go to).`))
-  icon_message("info",qspan(`/online - Shows you a list of online users.`))
-  icon_message("info",qspan(`/rooms - Lists the rooms you're in.`))
-  icon_message("info",qspan(`/public - Lists publically joinable rooms.`))
-  icon_message("info",qspan(`/join - Joins a room.`))
-  icon_message("info",qspan(`/leave - Leaves a room.`))
-  icon_message("info",qspan(`/createroom - Creates an unlisted room, which can be joined using the ID.`))
-  icon_message("info",qspan(`/createpublicroom - Creates a public room, which is publically listed and joinable.`))
+  icon_message("info", qspan(`Available commands:`))
+  icon_message("info", qspan(`/help - Shows this message.`))
+  icon_message("info", qspan(`/clear - Clears the screen.`))
+  icon_message("info", qspan(`/nick - Changes your nickname.`))
+  icon_message("info", qspan(`/c - Changes your active room (the one your messages go to).`))
+  icon_message("info", qspan(`/online - Shows you a list of online users.`))
+  icon_message("info", qspan(`/rooms - Lists the rooms you're in.`))
+  icon_message("info", qspan(`/public - Lists publically joinable rooms.`))
+  icon_message("info", qspan(`/join - Joins a room.`))
+  icon_message("info", qspan(`/leave - Leaves a room.`))
+  icon_message("info", qspan(`/createroom - Creates an unlisted room, which can be joined using the ID.`))
+  icon_message("info", qspan(`/createpublicroom - Creates a public room, which is publically listed and joinable.`))
 }
 
 /** @param {String} args */
@@ -602,8 +604,8 @@ function command_join_room(args) {
     system_message(qspan(`Partial room names, (eg. "ma"), are allowed, and will select the first found room.`))
     return
   }
-  if (args.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/,"") == "") {
-    socket.send(JSON.stringify({ n: "join_room", d: {id: args} }))
+  if (args.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/, "") == "") {
+    socket.send(JSON.stringify({ n: "join_room", d: { id: args } }))
   } else {
     /** @param {Array<Object>} list */
     on_pubroom_update = (list) => {
@@ -615,7 +617,7 @@ function command_join_room(args) {
         }
       })
       if (found.length != 0) {
-        socket.send(JSON.stringify({ n: "join_room", d: {id: found[0].id} }))
+        socket.send(JSON.stringify({ n: "join_room", d: { id: found[0].id } }))
       } else {
         system_message(qspan("No matching public rooms were found. If you're trying to join a non-public room, use its ID."))
       }
@@ -632,8 +634,8 @@ function command_delete_room(args) {
     system_message(qspan(`Partial room names, (eg. "ma"), are allowed, and will select the first found room.`))
     return
   }
-  if (args.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/,"") == "") {
-    socket.send(JSON.stringify({ n: "delete_room", d: {id: args} }))
+  if (args.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/, "") == "") {
+    socket.send(JSON.stringify({ n: "delete_room", d: { id: args } }))
   } else {
     /** @param {Array<Object>} list */
     on_pubroom_update = (list) => {
@@ -645,7 +647,7 @@ function command_delete_room(args) {
         }
       })
       if (found.length != 0) {
-        socket.send(JSON.stringify({ n: "delete_room", d: {id: found[0].id} }))
+        socket.send(JSON.stringify({ n: "delete_room", d: { id: found[0].id } }))
       } else {
         system_message(qspan("No matching public rooms were found. If you're trying to delete a non-public room, use its ID."))
       }
@@ -662,7 +664,7 @@ function command_create_public_room(args) {
     system_message(qspan(`Creates a room that is publically listed and joinable by anyone.`))
     return
   }
-  socket.send(JSON.stringify({ n: "create_room", d: {type: "public", name: args} }))
+  socket.send(JSON.stringify({ n: "create_room", d: { type: "public", name: args } }))
 }
 
 /** @param {String} args */
@@ -672,7 +674,7 @@ function command_create_unlisted_room(args) {
     system_message(qspan(`Creates a room that is hidden and joinable using the ID.`))
     return
   }
-  socket.send(JSON.stringify({ n: "create_room", d: {type: "unlisted", name: args} }))
+  socket.send(JSON.stringify({ n: "create_room", d: { type: "unlisted", name: args } }))
 }
 
 /** @param {String} args */
@@ -691,7 +693,7 @@ function command_list_public_rooms(args) {
 function command_list_rooms(args) {
   var memrooms = Object.values(rooms)
   var si = memrooms.length == 1
-  var items = [ qspan(`You are a member of ${memrooms.length} room${si?'':'s'}: `) ]
+  var items = [qspan(`You are a member of ${memrooms.length} room${si ? '' : 's'}: `)]
   for (let i = 0; i < memrooms.length; i++) {
     const room = memrooms[i]
     if (i != 0) { items.push(qspan(", ")) }
@@ -706,7 +708,7 @@ function command_auth(args) {
   if (args != '') {
     if (session_data.auth_key != args) {
       session_data.auth_key = args
-      try {sessionStorage.setItem("auth_key",args)} catch(err) {console.log(err)}
+      try { sessionStorage.setItem("auth_key", args) } catch (err) { console.log(err) }
     }
     socket.send(JSON.stringify({ n: "auth", d: args }))
     return
@@ -892,18 +894,18 @@ socket.onmessage = (real_event) => {
         icon_message("edit", qspan('Your nickname is now '), username_span(user), qspan('.'))
         document.getElementById("title").innerText = `Vessel (${user.name})`
         session_data.nickname = user.name
-        try {sessionStorage.setItem("nickname",user.name)} catch(err) {console.log(err)}
+        try { sessionStorage.setItem("nickname", user.name) } catch (err) { console.log(err) }
       }
 
       break
-    
+
     case "online_user_list":
       var users = data
       if (users.length == 0) {
         if (!logging_in) { system_message(qspan(`You are not allowed to list online users.`)) }
       } else {
         var si = users.length == 1
-        var items = [ qspan(`There ${si?'is':'are'} ${users.length} user${si?'':'s'} online: `) ]
+        var items = [qspan(`There ${si ? 'is' : 'are'} ${users.length} user${si ? '' : 's'} online: `)]
         for (let i = 0; i < users.length; i++) {
           const user = users[i]
           if (i != 0) { items.push(qspan(", ")) }
@@ -912,14 +914,14 @@ socket.onmessage = (real_event) => {
         system_message(...items)
       }
       break
-    
+
     case "public_room_list":
       if (on_pubroom_update != null) {
         on_pubroom_update(data)
       } else {
         var pubrooms = data
         var si = pubrooms.length == 1
-        var items = [ qspan(`There ${si?'is':'are'} ${pubrooms.length} public room${si?'':'s'}: `) ]
+        var items = [qspan(`There ${si ? 'is' : 'are'} ${pubrooms.length} public room${si ? '' : 's'}: `)]
         for (let i = 0; i < pubrooms.length; i++) {
           const room = pubrooms[i]
           if (i != 0) { items.push(qspan(", ")) }
@@ -929,7 +931,7 @@ socket.onmessage = (real_event) => {
       }
 
       break
-    
+
     case "login_done":
       if (session_data.auth_key) {
         command_auth(session_data.auth_key)
@@ -938,19 +940,19 @@ socket.onmessage = (real_event) => {
       if (session_data.room_access) {
         Object.keys(session_data.room_access).forEach((id) => {
           if (session_data.room_access[id]) {
-            socket.send(JSON.stringify({ n: "join_room", d: {id: id} }))
+            socket.send(JSON.stringify({ n: "join_room", d: { id: id } }))
           }
         })
       }
-      
+
       setTimeout(() => {
         if (session_data.active_room) {
           try {
             set_active_room(room_by_name(session_data.active_room))
-          } catch(err) { console.log(err) }
+          } catch (err) { console.log(err) }
         }
-      },500)
-      setTimeout(() => {logging_in = false},1000)
+      }, 500)
+      setTimeout(() => { logging_in = false }, 1000)
 
       break
 
@@ -973,7 +975,7 @@ socket.onmessage = (real_event) => {
         set_active_room(data)
       }
       session_data.room_access[data.id] = {}
-      try {sessionStorage.setItem("room_access",JSON.stringify(session_data.room_access))} catch(err) {console.log(err)}
+      try { sessionStorage.setItem("room_access", JSON.stringify(session_data.room_access)) } catch (err) { console.log(err) }
       console.log(`You have been added to the "` + data.name + `" room.`)
       break
 
@@ -988,17 +990,17 @@ socket.onmessage = (real_event) => {
       console.log(`You have been removed from the "` + room.name + `" room.`)
       rooms[id] = undefined
       session_data.room_access[data.id] = undefined
-      try {sessionStorage.setItem("room_access",JSON.stringify(session_data.room_access))} catch(err) {console.log(err)}
+      try { sessionStorage.setItem("room_access", JSON.stringify(session_data.room_access)) } catch (err) { console.log(err) }
       set_active_room(rooms[server.main_room_id] || rooms[server.shout_room_id])
       break
-    
+
     case "room_deleted":
       var room = data
-      var quote = room_delete_quotes[Math.floor(Math.random()*room_delete_quotes.length)]
+      var quote = room_delete_quotes[Math.floor(Math.random() * room_delete_quotes.length)]
       add_to_holder(
-        build_system_message(["nuke"], "delete_forever", qspan("The room "),room_span(room),qspan(quote))
+        build_system_message(["nuke"], "delete_forever", qspan("The room "), room_span(room), qspan(quote))
       )
-        
+
       break
 
     case "message":
