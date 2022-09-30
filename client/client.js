@@ -421,7 +421,41 @@ function display_embeds(message_div, links) {
                 d2.appendChild(frame)
                 d2.classList.add("mediaholder")
                 add_to_div(message_div, d2)
+              } else if (type == "Website" && result.video && result.video.url) {
+                if (result.video.url.endsWith("gif")) {
+                  /** @type {HTMLImageElement} */
+                  var image = document.createElement('img')
+                  image.src = january_proxy_url + result.video.url
+                  if (result.video.height) { image.height = Math.min(result.video.height, 320) }
 
+                  var d2 = document.createElement("div")
+                  d2.appendChild(image)
+                  d2.classList.add("mediaholder")
+                  add_to_div(message_div, d2)
+                } else {
+                  /** @type {HTMLVideoElement} */
+                  var video = document.createElement('video')
+                  video.preload = "metadata"
+                  video.controls = true
+                  video.autoplay = false
+                  video.src = january_proxy_url + result.video.url
+                  if (result.video.height) { video.height = Math.min(result.video.height, 320) }
+
+                  var d2 = document.createElement("div")
+                  d2.appendChild(video)
+                  d2.classList.add("mediaholder")
+                  add_to_div(message_div, d2)
+                }
+              } else if (type == "Website" && ((result.opengraph_type && result.opengraph_type.startsWith("image")) || result.site_name && result.site_name == "Imgur") && result.image && result.image.url) {
+                /** @type {HTMLImageElement} */
+                var image = document.createElement('img')
+                image.src = january_proxy_url + result.image.url
+                if (result.image.height) { image.height = Math.min(result.image.height, 320) }
+
+                var d2 = document.createElement("div")
+                d2.appendChild(image)
+                d2.classList.add("mediaholder")
+                add_to_div(message_div, d2)
               }
             }
           })
