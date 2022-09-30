@@ -409,7 +409,7 @@ function display_embeds(message_div, links) {
                 var frame = document.createElement('iframe')
                 frame.allowFullscreen = true
                 // frame.sandbox = "allow-scripts, allow-same-origin"
-                frame.src = "https://www.youtube.com/embed/" + result.special.id
+                frame.src = "https://www.youtube-nocookie.com/embed/" + result.special.id
                 if (result.video && result.video.height) {
                   frame.height = Math.min(result.video.height, 320)
                   if (result.video.width) {
