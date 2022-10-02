@@ -14,9 +14,9 @@ var adj = [
   'cheerful',
   'potted',
   'some kind of',
-	'a random',
-	'that one',
-	'fuzzy'
+  'a random',
+  'that one',
+  'fuzzy'
 ]
 var noun = [
   'cat',
@@ -33,14 +33,14 @@ var noun = [
   'bnuy',
   'anteater',
   'plant',
-	'gem',
-	'capybara',
-	'froge',
-	'fox'
+  'gem',
+  'capybara',
+  'froge',
+  'fox'
 ]
 
 function gen() {
-  return adj[Math.floor(Math.random()*adj.length)] + " " + noun[Math.floor(Math.random()*noun.length)]
+  return adj[Math.floor(Math.random() * adj.length)] + " " + noun[Math.floor(Math.random() * noun.length)]
 }
 exports.gen = gen
 
@@ -108,7 +108,7 @@ var deny_quotes = [
   "Do you smell what I smell?",
 ]
 function deny() {
-  return deny_quotes[Math.floor(Math.random()*deny_quotes.length)]
+  return deny_quotes[Math.floor(Math.random() * deny_quotes.length)]
 }
 exports.deny = deny
 
@@ -143,13 +143,16 @@ var startup_quotes = [
   "pyrule was here",
   "Brought to you by terrible ideas!",
   ":catJAM:",
-  "Fresh colors, picked directly from firefox devtools!",
+  "Fresh colors, picked directly from Firefox devtools!",
   "Did you know? The",
   "Winner!",
+  "Do you have a moment to discuss your car's extended warranty?",
+  "Not rusty!",
+	"engineer gamine ,, !",
   //--------------------------------------------------------------  <- max length 
   //     **** ALL QUOTES MUST BE 63 CHARACTERS OR LESS ****
 ]
 function startup() {
-  return startup_quotes[Math.floor(Math.random()*startup_quotes.length)]
+  return startup_quotes[Math.floor(Math.random() * startup_quotes.length)]
 }
 exports.startup = startup
