@@ -9,79 +9,210 @@ const config = require("./config_handler").config
 
 const namegen = require('./namegen')
 
-const main_room = {
-  id: "27b9bef4-ffb7-451e-b010-29870760e2b1",
-  name: config.main_channel_name,
-  isPublic: true,
-  isMain: true,
-  autoJoin: true,
-  disableJoinMessages: true,
-  disableLeaveMessages: true,
-  preventDeletion: true,
-  members: [],
-  muted: {},
-  userdata: {
-  },
-  founder: "00000000-0000-0000-0000-000000000000",
-  founderNick: "Vessel"
-}
-
-const shout_room = {
-  id: "823d68d9-a20c-409e-b6db-12e313ed9a16",
-  name: config.shout_channel_name,
-  adminOnly: true,
-  isShout: true,
-  isPublic: true,
-  autoJoin: true,
-  disableJoinMessages: true,
-  disableLeaveMessages: true,
-  disableRoommates: true,
-  preventLeaving: true,
-  preventDeletion: true,
-  members: [],
-  muted: {},
-  userdata: {
-    // "background": "https://autumn.revolt.chat/attachments/mjVJ8yZ5xHQIrClu2i57YHdtw_PhwBEeceOabZfg1X/field-6574455_1920.jpg",
-    // "backgroundDim": 75
-  },
-  founder: "00000000-0000-0000-0000-000000000000",
-  founderNick: "Vessel"
-}
-
+/** @type {User[]} */
 var clients = []
-var messages = []
+/** @type {Object<string,Room>} */
 var rooms = {}
 
-rooms[main_room.id] = main_room
-rooms[shout_room.id] = shout_room
+class Room {
+  /** Unique room ID, as a UUID
+   * @readonly
+   * @type {string} */
+  id;
+  
+  /** Human-readable room name. Not unique.
+   * @type {string} */
+  name;
 
-function send_to(user, data) {
-  user.socket.send(JSON.stringify(data))
+  /** Are normal users prevented from speaking in this room?
+   * @type {boolean} */
+  adminOnly = false;
+  
+  /** Is this room included in the room list?
+   * @type {boolean} */
+  isPublic = false;
+  
+  /** Is this a shout channel? (Shout channels may have special highlighting on clients)
+   * @type {boolean} */
+  isShout = false;
+
+  /** Is this room the server's main channel?
+   * @type {boolean} */
+  isMain = false;
+
+  /** Are users automatically added to this room when they connect for the first time?
+   * @type {boolean} */
+  autoJoin = false;
+
+  /** Should the user joined signal be disabled?
+   * @type {boolean} */
+  disableJoinMessages = false;
+
+  /** Should the user left signal be disabled?
+   * @type {boolean} */
+  disableLeaveMessages = false;
+  
+  /** Should this room be skipped when getting lists of users with mutual rooms?  
+   * @type {boolean} */
+  disableRoommates = false;
+
+  /** Is this room protected from deletion?
+   * @type {boolean} */
+  preventDeletion = false;
+  
+  /** Are users prevented from leaving this room?  
+   * **Note:** This does not prevent users from hiding sent messages.
+   * @type {boolean} */
+  preventLeaving = false;
+
+  /** UUID of the room's creator, using a zeroed UUID to represent the server.
+   * @type {string} */
+  founder = "00000000-0000-0000-0000-000000000000";
+
+  /** Nickname of the room's creator, using "Vessel" to represent the server.
+   * @type {string} */
+  founderNick = "Vessel";
+  
+  /** Array of users that are members of this channel.
+   * @type {User[]} */
+  members = [];
+  
+  /** Dictionary of muted users, with user UUID as keys.
+   * @type {Object<string,boolean>} */
+  muted = {};
+
+  /** User-defined room metadata.
+   * @type {Object<string,any>} */
+  userdata = {};
+  
+  /**
+   * @param {string} name
+   * @param {"public"|"unlisted"} type
+   * @param {User} [founder]
+   * @param {string} [uuid_override]
+   */
+  constructor(name, type, founder, uuid_override) {
+    if (founder && !founder.superadmin) {
+      if (!config.allow_room_creation) throw new Error("Room creation is disabled.")
+      if (name.length < 2) throw new Error("Name is too short!")
+      if (name.length > 32) throw new Error("Name is too long!")
+    }
+    this.id = uuid_override ? uuid_override : uuid.v4()
+    this.name = name
+    this.founder = founder ? founder.id : "00000000-0000-0000-0000-000000000000",
+    this.founderNick = founder ? founder.name : "Vessel"
+    
+    switch (type) {
+      case "public":
+        if (founder && !founder.check_permission(config.room_creation_public)) {
+          throw new Error("You are not allowed to do that!")
+        } else {
+          this.isPublic = true
+          break
+        }
+      case "unlisted":
+        if (founder && !founder.check_permission(config.room_creation_unlisted)) {
+          throw new Error("You are not allowed to do that!")
+        } else { break }
+      default:
+        throw new Error("Invalid room type!")
+    }
+
+    rooms[this.id] = this
+    if (founder) founder.join(this)
+  }
+
+  /**
+   * Sends a client message to every member of this room.
+   * @param {string} name
+   * @param {any} data
+   */
+  send_to_members(name, data) {
+    var s = JSON.stringify({n: name, d: data})
+    room.members.forEach(c => c.socket.send(s))
+  }
+
+  /**
+   * Creates a clean version of the room's data to send to clients.
+   * @param {User} [user] Specific user recieving the data (for mute status)
+   * @returns {Object<string,any>}
+   */
+  get_client_object(user) {
+    var data = {}
+    Object.keys(this).forEach((k) => {
+      if (k != "members" && k != "muted") { data[k] = this[k] }
+    })
+    if (user && (this.muted[user.id] || (this.adminOnly && !(user.isAdmin || user.isMod)))) 
+    { data.muted = true }
+    return data
+  }
+  
+  /**
+   * Destroys the room, notifying its members and removing it from the room list.
+   * @param {User} [user] User performing the delete operation
+   */
+  delete_room(user) {
+    if (user && !user.superadmin) {
+      if (!user.check_permission(config.room_deletion, this.founder)) {
+        throw new Error("Access denied")
+      }
+      if (this.preventDeletion) {
+        throw new Error("Room cannot be deleted.")
+      }
+    }
+    rooms[this.id] = undefined
+    this.send_to_members("room_deleted", get_client_room_data(room))
+    Object.values(room.members).forEach((u) => remove_user_from_room(u, room))
+  }
 }
+
+var main_room = new Room(config.main_channel_name,"public",undefined,"27b9bef4-ffb7-451e-b010-29870760e2b1")
+main_room.isMain = true
+main_room.autoJoin = true
+main_room.disableJoinMessages = true
+main_room.disableLeaveMessages = true
+main_room.preventDeletion = true
+
+var shout_room = new Room(config.main_channel_name,"public",undefined,"27b9bef4-ffb7-451e-b010-29870760e2b1")
+shout_room.isShout = true
+shout_room.adminOnly = true
+shout_room.autoJoin = true
+shout_room.disableJoinMessages = true
+shout_room.disableLeaveMessages = true
+shout_room.preventLeaving = true
+shout_room.preventDeletion = true
+
 function send_to_all(data) {
   var s = JSON.stringify(data)
   clients.forEach(c => c.socket.send(s))
 }
+
+/** @deprecated */
+function send_to(user, data) {
+  user.socket.send(JSON.stringify(data))
+}
+/** @deprecated */
 function send_to_members(room, data) {
   if (room) {
     var s = JSON.stringify(data)
     room.members.forEach(c => c.socket.send(s))
   }
 }
-function send_to_roommates(user, data) {
-  var targets = {}
-  user.rooms.forEach((room) => {
-    if (!room.disableRoommates) {
-      room.members.forEach((u) => {
-        targets[u] = true
-      })
-    }
-  })
-  var s = JSON.stringify(data)
-  Object.values(targets).forEach(c => c.socket.send(s))
-}
+// function send_to_roommates(user, data) {
+//   var targets = {}
+//   user.rooms.forEach((room) => {
+//     if (!room.disableRoommates) {
+//       room.members.forEach((u) => {
+//         targets[u] = true
+//       })
+//     }
+//   })
+//   var s = JSON.stringify(data)
+//   Object.values(targets).forEach(c => c.socket.send(s))
+// }
 
 
+/** @deprecated */
 function get_client_room_data(from, user) {
   var room = {}
   Object.keys(from).forEach((k) => {
@@ -95,6 +226,8 @@ function get_client_room_data(from, user) {
   ) { room.muted = true }
   return room
 }
+
+/** @deprecated */
 function get_client_user_data(from) {
   var user = {}
   Object.keys(from).forEach((k) => {
@@ -122,25 +255,15 @@ function on_new_admin(user) {
   })
 }
 
+function become_admin(user) {
+  
+}
+
+/** 
+
+ * @deprecated
+ */
 function become_potted_plant(user) {
-  if (user.isAdmin || user.isMod) {
-    send_to(user, {
-      n: "system_message", d: { items: [{ text: "You already did that." }] }
-    })
-    return
-  }
-  user.isAdmin = true
-  // user.name = "Basil"
-
-  on_new_admin(user)
-
-  send_to(user, {
-    n: "user_update",
-    d: {
-      isAdmin: true,
-      // name: "Basil",
-    }
-  })
 }
 
 function become_mod(user) {
@@ -245,53 +368,12 @@ function check_user_permission(user, level, founderID) {
 }
 
 /**
- * @param {String} name
+ * @param {string} name
+ * @param {"public"|"unlisted"} type
+ * @param {User} user
  */
 function create_room(name, type, user) {
-  if (!config.allow_room_creation && (user && !user.superadmin)) {
-    send_to(user, { n: "system_message", d: { items: [{ text: "Room creation is disabled." }] } })
-  }
-  if (name.length < 2) {
-    send_to(user, { n: "system_message", d: { items: [{ text: "Name is too short!" }] } })
-    return
-  }
-  if (name.length > 32) {
-    send_to(user, { n: "system_message", d: { items: [{ text: "Name is too long!" }] } })
-    return
-  }
-  var room = {
-    id: uuid.v4(),
-    name: name,
-    adminOnly: false,
-    isShout: false,
-    isPublic: false,
-    autoJoin: false,
-    disableRoommates: false,
-    preventLeaving: false,
-    preventDeletion: false,
-    userdata: {},
-    members: [],
-    muted: {},
-    founder: user ? user.id : "00000000-0000-0000-0000-000000000000",
-    founderNick: user ? user.name : "Vessel"
-  }
-  switch (type) {
-    case "public":
-      if (user && !check_user_permission(user, config.room_creation_public)) {
-        send_to(user, { n: "system_message", d: { items: [{ text: "You are not allowed to do that!" }] } })
-        return
-      } else {
-        room.isPublic = true
-        break
-      }
-    case "unlisted": default:
-      if (user && !check_user_permission(user, config.room_creation_unlisted)) {
-        send_to(user, { n: "system_message", d: { items: [{ text: "You are not allowed to do that!" }] } })
-        return
-      }
-  }
-  rooms[room.id] = room
-  add_user_to_room(user, room)
+  new Room(name, type, user)
 }
 
 function delete_room(room, user) {
