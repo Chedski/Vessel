@@ -2,8 +2,10 @@
 const fs = require('fs');
 const yaml = require('js-yaml');
 
+
 /**
  * @type {{
+ * superadmin_key: string,
  * admin_key: string,
  * mod_key: string,
  * main_channel_name: string,
@@ -11,7 +13,8 @@ const yaml = require('js-yaml');
  * allow_room_creation: boolean,
  * room_creation_public: "none"|"mod"|"admin"|"all",
  * room_creation_unlisted: "none"|"mod"|"admin"|"all",
- * room_deletion: "none"|"mod"|"admin"|"all",
+ * room_deletion: "none"|"founder"|"mod"|"admin"|"all",
+ * room_modify_userdata: "none"|"founder"|"mod"|"admin"|"all",
  * list_online_users: "none"|"mod"|"admin"|"all",
  * welcome_message: string[]?,
  * port: number
@@ -21,6 +24,13 @@ const yaml = require('js-yaml');
 var config = yaml.load(fs.readFileSync('./config.yml').toString())
 
 // Use environment variables if blank strings are set
+if (config.superadmin_key === "" || config.superadmin_key == null) {
+  if (process.env.SUPERADMINKEY) {
+    config.superadmin_key = process.env.SUPERADMINKEY
+  } else {
+    throw new Error("No superadmin key is set!")
+  }
+}
 if (config.admin_key === "" || config.admin_key == null) {
   if (process.env.ADMINKEY) {
     config.admin_key = process.env.ADMINKEY

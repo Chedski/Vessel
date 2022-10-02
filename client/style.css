@@ -1,14 +1,126 @@
-html,body {
+html {
   width: 100% !important;
-  /* height: 100% !important; */
   min-height: 100% !important;
+
+  --theme-transition-time: 1s;
+  
+  --background-dim: 75%;
+  
+  --main-background: #222428;
+  --hover-background: #2d2f33;
+  --bar-background: #18191b;
+  --bar-edge: #18191b;
+  --textbox-background: #141414;
+
+  --shout-background: #ffccff15;
+  --shout-hover-background: #ffccff35;
+  --nuke-background: #ffcccc13;
+  --nuke-hover-background: #ffcccc35;
+  --newadmin-background: #aaffff18;
+  --newadmin-hover-background: #aaffff35;
+
+  --text-normal: #ffffff;
+  --text-system: #ffb87a;
+  --text-nuke: #ff7a7a;
+  --text-nuke-detail: #ffcccc;
+  --text-newadmin: #7affff;
+  --text-newadmin-detail: #ccffff;
+
+  --text-mod-msg: #d5f0ff;
+  --text-admin-msg: #d6ffd5;
+
+  --username: #8fd3e6;
+  --my-username: #ff65d3;
+  --mod-username: #0095ff;
+  --admin-username: #8cc784;
+  
+  --room-name: #ffccff;
+  --room-name-dm: #ffcccc;
+  
+  --link-normal: #8cc784;
+
 }
 
+html.light {
+  --main-background: #dddbd7;
+  --hover-background: #d2d0cc;
+  --bar-background: #e7e6e4;
+  --bar-edge: #e7e6e4;
+  --textbox-background: #ebebeb;
+
+  --shout-background: #ffccff15;
+  --shout-hover-background: #ffccff35;
+  --nuke-background: #ff808014;
+  --nuke-hover-background: #ff797936;
+  --newadmin-background: #39007d17;
+  --newadmin-hover-background: #a598ff45;
+
+  --text-normal: #000000;
+  --text-system: #bb6b00;
+  --text-nuke: #ff0f0f;
+  --text-nuke-detail: #bb0000;
+  --text-newadmin: #3c4fff;
+  --text-newadmin-detail: #7899f1;
+
+  --text-mod-msg: #213038;
+  --text-admin-msg: #1c2b1d;
+
+  --username: #23819c;
+  --my-username: #ff00b9;
+  --mod-username: #0095ff;
+  --admin-username: #519b46;
+
+  --room-name: #8e32cc;
+  --room-name-dm: #8e32cc;
+  
+  
+  --link-normal: #459451;
+}
+
+html.inverted {
+  --main-background: #dddbd7;
+  --hover-background: #d2d0cc;
+  --bar-background: #e7e6e4;
+  --bar-edge: #e7e6e4;
+  --textbox-background: #ebebeb;
+
+  --shout-background: #00330015;
+  --shout-hover-background: #00330035;
+  --nuke-background: #00333313;
+  --nuke-hover-background: #00333335;
+  --newadmin-background: #55000018;
+  --newadmin-hover-background: #55000035;
+
+  --text-normal: #000000;
+  --text-system: #004785;
+  --text-nuke: #008585;
+  --text-nuke-detail: #003333;
+  --text-newadmin: #850000;
+  --text-newadmin-detail: #330000;
+
+  --text-mod-msg: #2a0f00;
+  --text-admin-msg: #29002a;
+
+  --username: #702c19;
+  --my-username: #009a2c;
+  --mod-username: #ff6a00;
+  --admin-username: #73387b;
+  
+  --room-name: #003300;
+  --room-name-dm: #003333;
+  
+  --link-normal: #73387b;
+}
+
+
+
 body {
-  color: #fff;
+  width: 100% !important;
+  min-height: 100% !important;
+  background-color: var(--main-background);
+  color: var(--text-normal);
   font-size: 11pt;
   font-weight: 400;
-  background-color: #222428;
   margin: 0;
   font-family: 'Noto Sans', Lato, Roboto, 'Open Sans', Oxygen, Ubuntu, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Cantarell, 'Helvetica Neue', sans-serif;
   overflow: hidden;
@@ -20,6 +132,7 @@ body {
   align-items: stretch;
   justify-content: flex-start;
   box-sizing: content-box;
+  transition: background-color var(--theme-transition-time) !important;
 }
 
 @keyframes load_flash {
@@ -45,29 +158,70 @@ body {
   }
 }
 
+@keyframes bg_in {
+  0% { opacity: 0; }
+  100% { opacity: 100%; }
+}
+
+@keyframes bg_out {
+  0% { opacity: 100%; }
+  100% { opacity: 0; }
+}
+
+.bg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-size: cover !important;
+  background-position: center !important;
+  transition: none;
+}
+#bg {
+  background: var(--main-background);
+  z-index: -3;
+}
+#bg_dim {
+  background: var(--main-background);
+  opacity: var(--background-dim);
+  z-index: -1;
+  transition: background-color var(--theme-transition-time) !important;
+}
+#bg_fadefrom {
+  background: var(--main-background);
+  opacity: 100%;
+  z-index: -2;
+}
+#bg_fadefrom.anim {
+  animation: bg_out forwards linear var(--theme-transition-time);
+}
+
 .bar {
-  background-color: #1b1d1f;
+  background-color: var(--bar-background);
   padding: 10px 8px 8px 10px;
 }
 #title_bar {
-  border-bottom: 3px solid hsl(210, 7%, 10%);
+  border-bottom: 3px solid var(--bar-edge);
   padding-top: 10px;
+  transition: background-color var(--theme-transition-time), border-bottom var(--theme-transition-time) !important;
 }
 #send_message_bar {
-  border-top: 3px solid hsl(210, 7%, 10%);
+  border-top: 3px solid var(--bar-edge);
   padding-bottom: 12px;
   display: flex;
   flex-direction: row;
+  transition: background-color var(--theme-transition-time), border-top var(--theme-transition-time) !important;
 }
 #message_content {
-  background: #141414;
-  color: #fff;
-  border: none;
-  border: 8px solid #141414;
+  background: var(--textbox-background);
+  color: var(--text-normal);
+  border: 8px solid var(--textbox-background);
   flex: 1;
   font-family: 'Noto Sans', Lato, Roboto, 'Open Sans', Oxygen, Ubuntu, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Cantarell, 'Helvetica Neue', sans-serif;
   font-weight: 400;
   font-size: 11pt;
+  transition: color var(--theme-transition-time), background-color var(--theme-transition-time), border var(--theme-transition-time) !important;
 }
 
 code {
@@ -80,7 +234,7 @@ code {
 }
 
 a {
-  color: #8cc784;
+  color: var(--link-normal);
 }
 
 .mediaholder video, .mediaholder audio, .mediaholder img {
@@ -123,6 +277,8 @@ a {
   padding: 4px 0 6px 0;
   flex: 1;
   scroll-behavior: smooth;
+/*   background-color: var(--main-background);
+  transition: background-color var(--theme-transition-time); */
 }
 
 #message_holder.unloaded {
@@ -157,93 +313,107 @@ a {
 }
 
 .system {
-  color: rgb(255, 184, 122);
+  color: var(--text-system);
+  transition: color var(--theme-transition-time) !important;
 }
 .nuke {
-  color: rgb(255, 122, 122);
+  color: var(--text-nuke);
+  transition: color var(--theme-transition-time) !important;
 }
 .reason, .nuke .room_name {
-  color: rgb(255, 204, 204) !important;
+  color: var(--text-nuke-detail) !important;
+  transition: color var(--theme-transition-time) !important;
 }
 
-.newadmin {
-  color: rgb(122, 255, 255);
+.newadmin, .newadmin span {
+  color: var(--text-newadmin);
+  transition: color var(--theme-transition-time) !important;
 }
 .newadmin .reason, .newadmin .room_name {
-  color: rgb(204, 255, 255) !important;
+  color: var(--text-newadmin-detail) !important;
+  transition: color var(--theme-transition-time) !important;
 }
 
 .message {
   overflow: visible;
   padding: 1px 0 3px 8px;
   animation: enter_fade 0.2s ease-out 1;
-  transition: background-color 0.2s;
+  transition: background-color var(--theme-transition-time) !important;
 }
 .message:hover {
-  background-color: #2d2f33;
+  background-color: var(--hover-background);
 }
 .message.system {
-  /* padding: 1px 0 1px 8px; */
+  transition: color var(--theme-transition-time), background-color var(--theme-transition-time) !important;
 }
 .message.shout {
   margin: 4px 0 4px 0;
   padding: 7px 0 9px 8px;
-  background-color: #ffccff15;
+  background-color: var(--shout-background);
+  transition: background-color var(--theme-transition-time) !important;
 }
 .message.shout:hover {
-  background-color: #ffccff35;
+  background-color: var(--shout-hover-background);
 }
 .message.nuke {
   margin: 4px 0 4px 0;
   /* padding: 7px 0 9px 8px; */
   padding-bottom: 3px;
-  background-color: #ffcccc13;
+  background-color: var(--nuke-background);
+  transition: background-color var(--theme-transition-time) !important;
 }
 .message.nuke:hover {
-  background-color: #ffcccc35;
+  background-color: var(--nuke-hover-background);
 }
 .message.newadmin {
   margin: 4px 0 4px 0;
   /* padding: 7px 0 9px 8px; */
   padding-bottom: 3px;
-  background-color: #aaffff18;
+  background-color: var(--newadmin-background);
+  transition: background-color var(--theme-transition-time) !important;
 }
 .message.newadmin:hover {
-  background-color: #aaffff35;
+  background-color: var(--newadmin-hover-background);
 }
 
 .other .username, .other_username, .dm.me .username {
-  color: #8fd3e6;
+  color: var(--username);
+  transition: color var(--theme-transition-time) !important;
 }
 .admin .username, .admin_username {
-  color: #8cc784 !important;
+  color: var(--admin-username) !important;
+  transition: color var(--theme-transition-time) !important;
   /* color: #ff6a6a; */
 }
 .mod .username, .mod_username {
-  color: #0095ff !important;
+  color: var(--mod-username) !important;
+  transition: color var(--theme-transition-time) !important;
   /* color: #8885d8; */
   /* color: #ff6a6a; */
 }
 .me .username, .my_username {
   /* color: rgb(207, 255, 168); */
-  color: rgb(255, 101, 211);
+  color: var(--my-username);
+  transition: color var(--theme-transition-time) !important;
 }
 
 .admin .message_txt {
-  color: #d6ffd5;
+  color: var(--text-admin-msg);
+  transition: color var(--theme-transition-time) !important;
   /* color: #ffd9d9; */
 }
 .mod .message_txt {
-  color: #d5f0ff;
+  color: var(--text-mod-msg);
+  transition: color var(--theme-transition-time) !important;
   /* color: #ffd9d9; */
 }
 .room_name {
-  /* color: rgb(255, 240, 128); */
-  color: #fcf;
-  /* font-weight: 600; */
+  color: var(--room-name);
+  transition: color var(--theme-transition-time) !important;
 }
 .dm .room_name {
   /* color: rgb(255, 240, 128); */
-  color: rgb(255, 204, 204);
+  color: var(--room-name-dm);
+  transition: color var(--theme-transition-time) !important;
   /* font-weight: 600; */
 }

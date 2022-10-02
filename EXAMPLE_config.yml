@@ -1,10 +1,11 @@
 # Vessel Configuration
 
 # Available access types:
-# - all: Any user can create rooms of this type
-# - mod: Mods and admins can create rooms of this type
-# - admin: Only admins can create rooms of this type
-# - none: Rooms of this type cannot be created
+# - all: Any user can perform this action
+# - mod: Room founder, mods and admins can perform this action
+# - mod: Mods and admins can perform this action
+# - admin: Only admins can perform this action
+# - none: Action is not allowed (superadmins bypass this)
 
 # Default rooms
 main_channel_name: "Main"
@@ -15,7 +16,8 @@ allow_room_creation: true # Turning this off will completely disable room creati
 room_creation_public: "mod" # Rooms that are visible to all clients and can be joined by name
 room_creation_unlisted: "all" # Rooms that are invisible but can be joined by UUID
 
-room_deletion: "mod" # Permission required to delete rooms
+room_deletion: "founder" # Permission required to delete rooms
+room_modify_userdata: "founder" # Permission required to modify room userdata
 
 # Listing
 list_online_users: "all" # Permission level required to get a list of online users
@@ -27,6 +29,11 @@ welcome_message:
   - "You can also join public or unlisted rooms with /join."
 
 # Other
-admin_key: "" # Leave as an empty string to use the ADMINKEY environment variable
 mod_key: "" # Leave as an empty string to use the MODKEY environment variable
+admin_key: "" # Leave as an empty string to use the ADMINKEY environment variable
+
+# WARNING: Superadmins have complete control over user/room tables and can easily damage the server.
+# Don't give out superadmin to anyone you don't COMPLETELY trust!
+superadmin_key: "" # Leave as an empty string to use the SUPERADMINKEY environment variable
+
 port: 8692

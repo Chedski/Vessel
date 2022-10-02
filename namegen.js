@@ -14,6 +14,9 @@ var adj = [
   'cheerful',
   'potted',
   'some kind of',
+	'a random',
+	'that one',
+	'fuzzy'
 ]
 var noun = [
   'cat',
@@ -30,6 +33,10 @@ var noun = [
   'bnuy',
   'anteater',
   'plant',
+	'gem',
+	'capybara',
+	'froge',
+	'fox'
 ]
 
 function gen() {

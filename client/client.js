@@ -90,7 +90,7 @@ function md(mdText) {
         .replace(/__(.*?)__/gm, '<u>$1</u>')
         .replace(/~~(.*)~~/gm, '<del>$1</del>')
         .replace(/\^\^(.*)\^\^/gm, '<ins>$1</ins>')
-        .replace(/\\([`_\\\*\+\-\.\(\)\[\]\{\}])/gm, '$1')
+        // .replace(/\\([`_\\\*\+\-\.\(\)\[\]\{\}])/gm, '$1')
         .replace(/(?<!["'=])http(s?:\/\/[^ ?#]*\??[^ #]*?#?[^ ]*)/gm, '<a href="http$1">http$1</a>')
       // .replace(/^##### (.*?)\s*#*$/gm, '<h5>$1</h5>')
       // .replace(/^#### (.*?)\s*#*$/gm, '<h4 id="$1">$1</h4>')
@@ -172,12 +172,15 @@ function username_span(target, add_colon) {
 
   var should_add_space = false
 
-  if (target.isAdmin) {
+  if (target.id == "00000000-0000-0000-0000-000000000000") {
+    should_add_space = true
+    span.classList.add("admin_username")
+    span.appendChild(qicon("dns"))
+  } else if (target.isAdmin) {
     should_add_space = true
     span.classList.add("admin_username")
     span.appendChild(qicon("security"))
-  }
-  else if (target.isMod) {
+  } else if (target.isMod) {
     should_add_space = true
     span.classList.add("mod_username")
     span.appendChild(qicon("shield"))
@@ -409,7 +412,7 @@ function display_embeds(message_div, links) {
                 var frame = document.createElement('iframe')
                 frame.allowFullscreen = true
                 // frame.sandbox = "allow-scripts, allow-same-origin"
-                frame.src = "https://www.youtube-nocookie.com/embed/" + result.special.id
+                frame.src = "https://www.youtube-nocookie.com/embed/" + result.special.id + "?modestbranding=1"
                 if (result.video && result.video.height) {
                   frame.height = Math.min(result.video.height, 320)
                   if (result.video.width) {
@@ -506,12 +509,42 @@ function update_topbar() {
   document.getElementById("titlebar_sep").hidden = false
 }
 
+// theme
+var current_background = "var(--main-background)"
+function update_theme() {
+  console.log("updating theme")
+
+  var new_bg = "var(--main-background)"
+  var old_bg = current_background
+
+  if (user.active_room && user.active_room.userdata && user.active_room.userdata.background) {
+    var new_bg = `url(${january_proxy_url + encodeURI(user.active_room.userdata.background)})`
+  }
+
+  if (new_bg != old_bg) {
+    /** @type {HTMLDivElement} */
+    var fade_div = document.getElementById("bg_fadefrom")
+    /** @type {HTMLDivElement} */
+    var bg_div = document.getElementById("bg")
+
+    current_background = new_bg
+
+    fade_div.style.background = old_bg
+    fade_div.classList.remove("anim")
+    bg_div.style.background = new_bg
+    setTimeout(() => {
+      fade_div.classList.add("anim")
+    }, 10)
+  }
+}
+
 // Room stuff
 function set_active_room(room) {
   user.active_room = room
 
 
   update_topbar()
+  update_theme()
 
   if (!logging_in) { icon_message("swap_horiz", qspan("Your active room is now "), room_span(user.active_room), qspan(".")) }
   // icon_message("signpost",qspan("Your active room is now "),room_span(user.active_room),qspan("."))
@@ -576,7 +609,7 @@ function command_help(args) {
   icon_message("info", qspan(`/help - Shows this message.`))
   icon_message("info", qspan(`/clear - Clears the screen.`))
   icon_message("info", qspan(`/nick - Changes your nickname.`))
-  icon_message("info", qspan(`/c - Changes your active room (the one your messages go to).`))
+  icon_message("info", qspan(`/channel - Changes your active room (the one your messages go to).`))
   icon_message("info", qspan(`/online - Shows you a list of online users.`))
   icon_message("info", qspan(`/rooms - Lists the rooms you're in.`))
   icon_message("info", qspan(`/public - Lists publically joinable rooms.`))
@@ -584,6 +617,8 @@ function command_help(args) {
   icon_message("info", qspan(`/leave - Leaves a room.`))
   icon_message("info", qspan(`/createroom - Creates an unlisted room, which can be joined using the ID.`))
   icon_message("info", qspan(`/createpublicroom - Creates a public room, which is publically listed and joinable.`))
+  icon_message("info", qspan('/whofounded - Used to find out who is in charge of a room.'))
+  icon_message("info", qspan('/setroomdata - Sets custom metadata on a room (like backgrounds).'))
 }
 
 /** @param {String} args */
@@ -759,6 +794,75 @@ function command_change_nickname(args) {
   }
 }
 
+/** @param {String} args */
+function command_who_founded(args) {
+  if (args == '') {
+    system_message(qspan(`Syntax: /whofounded <name or id>`))
+    system_message(qspan(`Used to find out who is in charge of a room`))
+  } else {
+    system_message(qspan(room_by_name(args).founderNick))
+  }
+}
+
+/** @param {String} args */
+function command_set_room_data(args) {
+  if (args == '') {
+    system_message(qspan(`Syntax: /setroomdata <room> <json>`))
+    system_message(qspan(`Sets custom metadata values on a room.`))
+    system_message(qspan(`For example: /srd Main {"background": "https://example.com/image.png"}`))
+  }
+  /** @type {RegExp} args */
+  var rx = /^([^ ]+) (.*)$/;
+  var parts = rx.exec(args)
+
+  var id = parts[1]
+  var data = parts[2]
+
+  if (!id) { system_message(qspan(`Room not found`)); return }
+  if (!data) { system_message(qspan(`Missing JSON`)); return }
+
+  try { id = room_by_name(id).id }
+  catch (err) {
+    if (!user.isAdmin && !user.isMod) {
+      /* Proceed using UUID if the user is admin/mod */
+      system_message(qspan(`Room not found`)); return
+    }
+  }
+
+  try { data = JSON.parse(data) }
+  catch (err) {
+    system_message(qspan(`Invalid JSON`))
+    return
+  }
+  if (typeof (data) != "object") { system_message(qspan(`JSON must be an object`)); return }
+
+  socket.send(JSON.stringify({ n: "modify_room_user_data", d: { id, data } }))
+}
+
+/** @param {String} args */
+function command_modify_room_internal_data(args) {
+  if (args == '') {
+    system_message(qspan(`Syntax: /editroominternals <uuid> <json>`))
+  }
+  /** @type {RegExp} args */
+  var rx = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) (.*)$/;
+  var parts = rx.exec(args)
+
+  var id = parts[1]
+  var data = parts[2]
+
+  if (!id) { system_message(qspan(`Invalid UUID`)); return }
+  if (!data) { system_message(qspan(`Missing JSON`)); return }
+
+  try { data = JSON.parse(data) }
+  catch (err) {
+    system_message(qspan(`Invalid JSON`))
+    return
+  }
+  if (typeof (data) != "object") { system_message(qspan(`JSON must be an object`)); return }
+
+  socket.send(JSON.stringify({ n: "modify_room_internal_data", d: { id, data } }))
+}
 
 // Send message handler
 
@@ -778,47 +882,99 @@ function send(content) {
       case "help":
         command_help(args)
         return
+
       case "clear":
         command_clear_screen(args)
         return
+
       case "ls":
         command_list_online(args)
         command_list_rooms(args)
         command_list_public_rooms(args)
         return
-      case "c": case "switch": case "room": case "sw":
+
+      case "c":
+      case "channel":
+      case "r":
+      case "switch":
+      case "room":
+      case "sw":
         command_switch_rooms(args)
         return
-      case "online": case "users": case "who": case "lsu":
+
+      case "online":
+      case "users":
+      case "who":
+      case "lsu":
+      case "lso":
         command_list_online(args)
         return
-      case "rooms": case "lsr":
+
+      case "rooms":
+      case "lsr":
         command_list_rooms(args)
         return
-      case "public": case "publicrooms": case "lsp":
+
+      case "public":
+      case "publicrooms":
+      case "lsp":
         command_list_public_rooms(args)
         return
+
       case "deleteroom":
         command_delete_room(args)
         return
-      case "createroom": case "newroom": case "createunlistedroom": case "createhiddenroom":
+
+      case "createroom":
+      case "newroom":
+      case "makeroom":
+      case "createunlistedroom":
+      case "createhiddenroom":
+      case "mkrm":
         command_create_unlisted_room(args)
         return
-      case "createpublicroom": case "newpublicroom":
+
+      case "createpublicroom":
+      case "makepublicroom":
+      case "newpublicroom":
+      case "mkpubrm":
         command_create_public_room(args)
         return
+
       case "join":
         command_join_room(args)
         return
+
       case "leave":
         command_leave_room(args)
         return
+
       case "auth":
         command_auth(args)
         return
+
       case "nick":
+      case "cn":
         command_change_nickname(args)
         return
+
+      case "whofounded":
+      case "getowner":
+      case "gf":
+        command_who_founded(args)
+        return
+
+      case "setroomdata":
+      case "srd":
+      case "srm":
+        command_set_room_data(args)
+        return
+
+      case "editroominternals":
+      case "intcfg":
+        command_modify_room_internal_data(args)
+        return
+
       default:
         system_message(qspan(`The command /${cmd} was not found.`))
     }
@@ -929,6 +1085,33 @@ socket.onmessage = (real_event) => {
         document.getElementById("title").innerText = `Vessel (${user.name})`
         session_data.nickname = user.name
         try { sessionStorage.setItem("nickname", user.name) } catch (err) { console.log(err) }
+      }
+
+      break
+
+    case "room_update":
+      var id = data.id
+      var room = rooms[id]
+      if (room) {
+        console.log(room)
+        var keys = Object.keys(data)
+
+        var items = [
+          qspan("The room "),
+          room_span(room),
+          qspan(" has been renamed to ")
+        ]
+        var was_renamed = (data.name && data.name != room.name)
+
+        keys.forEach((k) => { room[k] = data[k] })
+        update_topbar()
+        update_theme()
+
+        if (was_renamed) {
+          items.push(room_span(room))
+          items.push(qspan("."))
+          system_message(...items)
+        }
       }
 
       break

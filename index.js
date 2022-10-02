@@ -19,7 +19,11 @@ const main_room = {
   disableLeaveMessages: true,
   preventDeletion: true,
   members: [],
-  muted: {}
+  muted: {},
+  userdata: {
+  },
+  founder: "00000000-0000-0000-0000-000000000000",
+  founderNick: "Vessel"
 }
 
 const shout_room = {
@@ -35,7 +39,13 @@ const shout_room = {
   preventLeaving: true,
   preventDeletion: true,
   members: [],
-  muted: {}
+  muted: {},
+  userdata: {
+    // "background": "https://autumn.revolt.chat/attachments/mjVJ8yZ5xHQIrClu2i57YHdtw_PhwBEeceOabZfg1X/field-6574455_1920.jpg",
+    // "backgroundDim": 75
+  },
+  founder: "00000000-0000-0000-0000-000000000000",
+  founderNick: "Vessel"
 }
 
 var clients = []
@@ -45,20 +55,20 @@ var rooms = {}
 rooms[main_room.id] = main_room
 rooms[shout_room.id] = shout_room
 
-function send_to(user,data) {
+function send_to(user, data) {
   user.socket.send(JSON.stringify(data))
 }
 function send_to_all(data) {
   var s = JSON.stringify(data)
-  clients.forEach(c=>c.socket.send(s))
+  clients.forEach(c => c.socket.send(s))
 }
-function send_to_members(room,data) {
+function send_to_members(room, data) {
   if (room) {
     var s = JSON.stringify(data)
-    room.members.forEach(c=>c.socket.send(s))
+    room.members.forEach(c => c.socket.send(s))
   }
 }
-function send_to_roommates(user,data) {
+function send_to_roommates(user, data) {
   var targets = {}
   user.rooms.forEach((room) => {
     if (!room.disableRoommates) {
@@ -68,11 +78,11 @@ function send_to_roommates(user,data) {
     }
   })
   var s = JSON.stringify(data)
-  Object.values(targets).forEach(c=>c.socket.send(s))
+  Object.values(targets).forEach(c => c.socket.send(s))
 }
 
 
-function get_client_room_data(from,user) {
+function get_client_room_data(from, user) {
   var room = {}
   Object.keys(from).forEach((k) => {
     if (k != "members" && k != "muted") {
@@ -88,7 +98,7 @@ function get_client_room_data(from,user) {
 function get_client_user_data(from) {
   var user = {}
   Object.keys(from).forEach((k) => {
-    if (k != "socket" && k != "rooms") {
+    if (k != "socket" && k != "rooms" && k != "superadmin") {
       user[k] = from[k]
     }
   })
@@ -96,7 +106,7 @@ function get_client_user_data(from) {
 }
 
 function on_new_admin(user) {
-  send_to(user,{
+  send_to(user, {
     n: "new_admin",
     d: get_client_user_data(user)
   })
@@ -104,7 +114,7 @@ function on_new_admin(user) {
   Object.values(rooms).forEach((room) => {
     // @ts-ignore
     if (room && room.adminOnly) {
-      send_to(user,{
+      send_to(user, {
         n: "muted_in_room",
         d: { id: room.id, muted: false }
       })
@@ -114,8 +124,8 @@ function on_new_admin(user) {
 
 function become_potted_plant(user) {
   if (user.isAdmin || user.isMod) {
-    send_to(user,{
-      n: "system_message", d: { items: [{text: "You already did that."}] }
+    send_to(user, {
+      n: "system_message", d: { items: [{ text: "You already did that." }] }
     })
     return
   }
@@ -123,8 +133,8 @@ function become_potted_plant(user) {
   // user.name = "Basil"
 
   on_new_admin(user)
-  
-  send_to(user,{
+
+  send_to(user, {
     n: "user_update",
     d: {
       isAdmin: true,
@@ -135,8 +145,8 @@ function become_potted_plant(user) {
 
 function become_mod(user) {
   if (user.isAdmin || user.isMod) {
-    send_to(user,{
-      n: "system_message", d: { items: [{text: "You already did that."}] }
+    send_to(user, {
+      n: "system_message", d: { items: [{ text: "You already did that." }] }
     })
     return
   }
@@ -144,14 +154,14 @@ function become_mod(user) {
 
   on_new_admin(user)
 
-  send_to(user,{
+  send_to(user, {
     n: "user_update",
     d: { isMod: true }
   })
 }
 
 
-function user_can_speak_in_room(user,room) {
+function user_can_speak_in_room(user, room) {
   if (room.muted[user.id]) {
     return false
   } else if (room.adminOnly && !(user.isMod || user.isAdmin)) {
@@ -162,22 +172,25 @@ function user_can_speak_in_room(user,room) {
 }
 
 
-function add_user_to_room(user,room,initial) {
+function add_user_to_room(user, room, initial) {
   if (room.members.some((u) => u == user)) {
-    send_to(user,{n: "system_message", d: {loginHide: true, items: [{text: `You are already a member of that room.`}]}})
+    send_to(user, { n: "system_message", d: { loginHide: true, items: [{ text: `You are already a member of that room.` }] } })
     return
   }
 
   if (!room.disableJoinMessages) {
-    send_to_members(room,{n: "system_message", d: {
-      loginHide: true,
-      items: [
-        // {text: 'The user '},
-        {type: "user", user: get_client_user_data(user)},
-        {text: ' has joined '},
-        {type: "room", room: get_client_room_data(room,user)},
-        {text: '.'}
-      ]}})
+    send_to_members(room, {
+      n: "system_message", d: {
+        loginHide: true,
+        items: [
+          // {text: 'The user '},
+          { type: "user", user: get_client_user_data(user) },
+          { text: ' has joined ' },
+          { type: "room", room: get_client_room_data(room, user) },
+          { text: '.' }
+        ]
+      }
+    })
   }
 
   // @ts-ignore
@@ -185,42 +198,47 @@ function add_user_to_room(user,room,initial) {
   user.rooms.push(room)
   user.socket.send(JSON.stringify({
     n: "added_to_room",
-    d: get_client_room_data(room,user),
+    d: get_client_room_data(room, user),
     q: initial
   }))
 }
 
-function remove_user_from_room(user,room,is_logout) {
+function remove_user_from_room(user, room, is_logout) {
   room.members = room.members.filter(u => (u != user))
 
   user.rooms = user.rooms.filter(r => (r != room))
   if (!room.disableLeaveMessages) {
-    send_to_members(room,{n: "system_message", d: {
-      loginHide: true,
-      items: [
-        // {text: 'The user '},
-        {type: "user", user: get_client_user_data(user)},
-        {text: ' has left '},
-        {type: "room", room: get_client_room_data(room,user)},
-        {text: '.'}
-      ]}})
+    send_to_members(room, {
+      n: "system_message", d: {
+        loginHide: true,
+        items: [
+          // {text: 'The user '},
+          { type: "user", user: get_client_user_data(user) },
+          { text: ' has left ' },
+          { type: "room", room: get_client_room_data(room, user) },
+          { text: '.' }
+        ]
+      }
+    })
   }
 
   if (!is_logout) {
     user.socket.send(JSON.stringify({
       n: "removed_from_room",
-      d: get_client_room_data(room,user)
+      d: get_client_room_data(room, user)
     }))
   }
 }
 
-function check_user_permission(user,level) {
+function check_user_permission(user, level, founderID) {
+  if (user.superadmin) { return true } // Superadmin bypass
   switch (level) {
     case "all": return true
+    case "founder": return (user.isAdmin || user.isMod || (founderID && user.id == founderID))
     case "mod": return (user.isAdmin || user.isMod)
     case "admin": return (user.isAdmin)
     case "none": return false
-  
+
     default:
       throw new Error(`Invalid permission level ${level}`)
   }
@@ -229,16 +247,16 @@ function check_user_permission(user,level) {
 /**
  * @param {String} name
  */
-function create_room(name,type,user) {
-  if (!config.allow_room_creation) {
-    send_to(user,{n: "system_message", d: {items: [{text: "Room creation is disabled."}]}})
+function create_room(name, type, user) {
+  if (!config.allow_room_creation && (user && !user.superadmin)) {
+    send_to(user, { n: "system_message", d: { items: [{ text: "Room creation is disabled." }] } })
   }
   if (name.length < 2) {
-    send_to(user,{n: "system_message", d: {items: [{text: "Name is too short!"}]}})
+    send_to(user, { n: "system_message", d: { items: [{ text: "Name is too short!" }] } })
     return
   }
   if (name.length > 32) {
-    send_to(user,{n: "system_message", d: {items: [{text: "Name is too long!"}]}})
+    send_to(user, { n: "system_message", d: { items: [{ text: "Name is too long!" }] } })
     return
   }
   var room = {
@@ -251,45 +269,67 @@ function create_room(name,type,user) {
     disableRoommates: false,
     preventLeaving: false,
     preventDeletion: false,
+    userdata: {},
     members: [],
-    muted: {}
+    muted: {},
+    founder: user ? user.id : "00000000-0000-0000-0000-000000000000",
+    founderNick: user ? user.name : "Vessel"
   }
   switch (type) {
     case "public":
-      if (user && !check_user_permission(user,config.room_creation_public)) {
-        send_to(user,{n: "system_message", d: {items: [{text: "You are not allowed to do that!"}]}})
+      if (user && !check_user_permission(user, config.room_creation_public)) {
+        send_to(user, { n: "system_message", d: { items: [{ text: "You are not allowed to do that!" }] } })
         return
       } else {
         room.isPublic = true
         break
       }
     case "unlisted": default:
-      if (user && !check_user_permission(user,config.room_creation_unlisted)) {
-        send_to(user,{n: "system_message", d: {items: [{text: "You are not allowed to do that!"}]}})
+      if (user && !check_user_permission(user, config.room_creation_unlisted)) {
+        send_to(user, { n: "system_message", d: { items: [{ text: "You are not allowed to do that!" }] } })
         return
       }
   }
   rooms[room.id] = room
-  add_user_to_room(user,room)
+  add_user_to_room(user, room)
 }
 
-function delete_room(room,user) {
-  if (user && !check_user_permission(user,config.room_deletion)) {
-    send_to(user,{n: "system_message", d: {items: [{text: namegen.deny()}]}})
+function delete_room(room, user) {
+  if (user && !check_user_permission(user, config.room_deletion, room.founder)) {
+    send_to(user, { n: "system_message", d: { items: [{ text: namegen.deny() }] } })
     return
   }
   if (room.preventDeletion) {
     if (user) {
-      send_to(user,{n: "system_message", d: {items: [{text: "Room cannot be deleted."}]}})
+      send_to(user, { n: "system_message", d: { items: [{ text: "Room cannot be deleted." }] } })
     }
     return
   }
   rooms[room.id] = undefined
-  send_to_members(room,{n: "room_deleted", d: get_client_room_data(room)})
-  Object.values(room.members).forEach((u) => remove_user_from_room(u,room))
+  send_to_members(room, { n: "room_deleted", d: get_client_room_data(room) })
+  Object.values(room.members).forEach((u) => remove_user_from_room(u, room))
 }
 
-app.ws("/ev", function(client_ws, req){
+function modify_room_userdata(room, user, data) {
+  if (user && !check_user_permission(user, config.room_modify_userdata, room.founder)) {
+    send_to(user, { n: "system_message", d: { items: [{ text: namegen.deny() }] } })
+    return
+  }
+  Object.keys(data).forEach((k) => { room.userdata[k] = data[k] })
+  send_to_members(room, { n: "room_update", d: get_client_room_data(room) })
+}
+
+function modify_room_data(room, user, data) {
+  // This isn't available to anyone but supers for VERY GOOD reasons
+  if (user && !user.superadmin) {
+    send_to(user, { n: "system_message", d: { items: [{ text: namegen.deny() }] } })
+    return
+  }
+  Object.keys(data).forEach((k) => { room[k] = data[k] })
+  send_to_members(room, { n: "room_update", d: get_client_room_data(room) })
+}
+
+app.ws("/ev", function(client_ws, req) {
   var client = {
     rooms: [],
     socket: client_ws,
@@ -302,7 +342,7 @@ app.ws("/ev", function(client_ws, req){
   client.socket.on('close', function() {
     console.log(`client '${client.name}' (${client.id}) disconnected`)
     client.rooms.forEach((room) => {
-      remove_user_from_room(client,room,true)
+      remove_user_from_room(client, room, true)
     })
     clients = clients.filter(user => (user != client))
   })
@@ -332,35 +372,48 @@ app.ws("/ev", function(client_ws, req){
         isMod: false
       }
     }))
-  
+
     Object.values(rooms).forEach((room) => {
       if (room && room.autoJoin) {
-        add_user_to_room(client,room)
+        add_user_to_room(client, room)
       }
     })
-    
+
     clients.push(client)
 
     if (config.welcome_message) {
       config.welcome_message.forEach(text => {
-        send_to(client,{n: "system_message",d: {
-          icon: "waving_hand", items: [ {text: text} ]
-        }})
+        send_to(client, {
+          n: "system_message", d: {
+            icon: "waving_hand", items: [{ text: text }]
+          }
+        })
       })
     }
 
     client.socket.send(JSON.stringify({ n: "login_done", d: {} }))
   }
-  
+
   /** @param {String} data */
   function on_auth(data) {
     if (typeof data === 'string') {
-      if (data === config.admin_key) { // TODO: Fix the security issue with this
+      var data_hash = crypto.createHash('sha256').update(data).digest()
+      var superkey_hash = crypto.createHash('sha256').update(config.superadmin_key).digest()
+      var adminkey_hash = crypto.createHash('sha256').update(config.admin_key).digest()
+      var modkey_hash = crypto.createHash('sha256').update(config.mod_key).digest()
+
+      if (crypto.timingSafeEqual(data_hash, superkey_hash)) {
         become_potted_plant(client)
-      } else if (data === config.mod_key) { // TODO: Fix the security issue with this
+        client.superadmin = true
+
+      } else if (crypto.timingSafeEqual(data_hash, adminkey_hash)) {
+        become_potted_plant(client)
+
+      } else if (crypto.timingSafeEqual(data_hash, modkey_hash)) {
         become_mod(client)
+
       } else {
-        send_to(client,{n: "system_message", d: {items: [{text: namegen.deny()}]}})
+        send_to(client, { n: "system_message", d: { items: [{ text: namegen.deny() }] } })
       }
     }
   }
@@ -368,14 +421,14 @@ app.ws("/ev", function(client_ws, req){
   /** @param {String} data */
   function request_leave_room(data) {
     if (!rooms[data]) {
-      send_to(client,{n: "system_message", d: {items: [{text: `Room does not exist.`}]}})
+      send_to(client, { n: "system_message", d: { items: [{ text: `Room does not exist.` }] } })
       return
     }
     var room = rooms[data]
     if (!room.preventLeaving) {
-      remove_user_from_room(client,room)
+      remove_user_from_room(client, room)
     } else {
-      send_to(client,{n: "system_message", d: {items: [{text: `Cannot leave that room.`}]}})
+      send_to(client, { n: "system_message", d: { items: [{ text: `Cannot leave that room.` }] } })
     }
   }
 
@@ -383,10 +436,10 @@ app.ws("/ev", function(client_ws, req){
   function request_join_room(data) {
     var room = rooms[data]
     if (room == undefined) {
-      send_to(client,{n: "system_message", d: {loginHide: true, items: [{text: `Room does not exist.`}]}})
+      send_to(client, { n: "system_message", d: { loginHide: true, items: [{ text: `Room does not exist.` }] } })
       return
     }
-    add_user_to_room(client,room)
+    add_user_to_room(client, room)
   }
 
   /** @param {String} data */
@@ -394,27 +447,27 @@ app.ws("/ev", function(client_ws, req){
     if (typeof data === 'string') {
       if (data.length <= 32 && data.length >= 1) {
         client.name = data
-        send_to(client,{
+        send_to(client, {
           n: "user_update",
           d: { name: data }
         })
         // send_to(client,{n: "system_message", d: {items: [{text: `Your name is now ${data}`}]}})
       } else {
-        send_to(client,{n: "system_message", d: {items: [{text: `Name is too long.`}]}})
+        send_to(client, { n: "system_message", d: { items: [{ text: `Name is too long.` }] } })
       }
     }
   }
 
   /** @param {{content: String, room: Object}} data */
   function message_sent(data) {
-    if (!Object.keys(rooms).includes(data.room)) {
+    if (!rooms[data.room]) {
       return
     }
 
     var room = rooms[data.room]
     if (!room) { return }
-    if (user_can_speak_in_room(client,room)) {
-      send_to_members(room,{
+    if (user_can_speak_in_room(client, room)) {
+      send_to_members(room, {
         n: "message",
         d: {
           room: room.id,
@@ -425,14 +478,16 @@ app.ws("/ev", function(client_ws, req){
         }
       })
     } else {
-      send_to(client,{n: "system_message",d: {
-        icon: "send",
-        items: [
-          {text: "You are not allowed to speak in "},
-          {type: "room", room: get_client_room_data(room,client)},
-          {text: "."}
-        ]
-      }})
+      send_to(client, {
+        n: "system_message", d: {
+          icon: "send",
+          items: [
+            { text: "You are not allowed to speak in " },
+            { type: "room", room: get_client_room_data(room, client) },
+            { text: "." }
+          ]
+        }
+      })
     }
   }
 
@@ -452,41 +507,58 @@ app.ws("/ev", function(client_ws, req){
           break
 
         case "create_room":
-          if (typeof(data.name) == "string" && (data.type == "public" || data.type == "unlisted")) {
-            create_room(data.name,data.type,client)
+          if (typeof (data.name) == "string" && (data.type == "public" || data.type == "unlisted")) {
+            create_room(data.name, data.type, client)
           }
           break
+
 
         case "change_name":
           request_change_name(data)
           break
 
         case "delete_room":
-          if (!Object.keys(rooms).includes(data.id)) {
+          if (!rooms[data.id]) {
             return
           }
-          delete_room(rooms[data.id],client)
+          delete_room(rooms[data.id], client)
+          break
+
+        case "modify_room_user_data":
+          console.log(data)
+          if (!rooms[data.id] || typeof (data.data) != "object") {
+            return
+          }
+          modify_room_userdata(rooms[data.id], client, data.data)
+          break
+
+        case "modify_room_internal_data":
+          if (!client.superadmin || !rooms[data.id] || typeof (data.data) != "object") {
+            console.log(`User ${client.name} (${client.id}) attempted to modify room internals while not superadmin`)
+            return
+          }
+          modify_room_data(rooms[data.id], client, data.data)
           break
 
         case "get_online_user_list":
-          if (check_user_permission(client,config.list_online_users)) {
-            send_to(client,{
+          if (check_user_permission(client, config.list_online_users)) {
+            send_to(client, {
               n: "online_user_list",
               d: clients.map((user) => get_client_user_data(user))
             })
           } else {
-            send_to(client,{n: "online_user_list", d: {}})
+            send_to(client, { n: "online_user_list", d: {} })
           }
           break
-        
+
         case "get_public_room_list":
           let pubrooms = []
           Object.values(rooms).forEach((room) => {
             if (room && room.isPublic) {
-              pubrooms.push(get_client_room_data(room,client))
+              pubrooms.push(get_client_room_data(room, client))
             }
           })
-          send_to(client,{
+          send_to(client, {
             n: "public_room_list",
             d: pubrooms
           })
@@ -495,7 +567,7 @@ app.ws("/ev", function(client_ws, req){
         case "message":
           message_sent(data)
           break
-        
+
         case "join_room":
           request_join_room(data.id)
           break
@@ -504,7 +576,7 @@ app.ws("/ev", function(client_ws, req){
           request_leave_room(data.id)
           break
       }
-    } catch(err) {
+    } catch (err) {
       console.log(err)
     }
   });
@@ -512,11 +584,11 @@ app.ws("/ev", function(client_ws, req){
 
 (async () => {
   var got = await import('got')
-  app.get("/twemoji.js", (req,res) => {
+  app.get("/twemoji.js", (req, res) => {
     // https://twemoji.maxcdn.com/v/latest/twemoji.min.js
     // @ts-ignore
     got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js").then((val) => {
-      res.setHeader("Content-Type","text/javascript")
+      res.setHeader("Content-Type", "text/javascript")
       res.send(val.body)
     }).catch((err) => {
       res.sendStatus(500)
@@ -529,3 +601,8 @@ app.ws("/ev", function(client_ws, req){
 })()
 
 
+process.on("unhandled_exception", (err) => {
+  setTimeout(() => {
+    process.exit()
+  }, 2000)
+})
