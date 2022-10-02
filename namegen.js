@@ -111,3 +111,45 @@ function deny() {
   return deny_quotes[Math.floor(Math.random()*deny_quotes.length)]
 }
 exports.deny = deny
+
+
+var startup_quotes = [
+  //     **** ALL QUOTES MUST BE 63 CHARACTERS OR LESS ****
+  //--------------------------------------------------------------  <- max length 
+  // "What is that smell?",
+  // "Why do we all have to wear these ridiculous ties?",
+  // "Do you think we should appeal to the alien authorities?",
+  // "Do you suspect some alien subterfuge behind this failure?",
+  // "Did you understand that last announcement?",
+  // "Climb up and start the rotors.",
+  // "Very good. We'll take it from here.",
+  // "Power to stage one emitters in three... two... one...",
+  // "I'm seeing predictable phase arrays.",
+  // "Stage two emitters activating... now.",
+  // "Get away from the beams!",
+  // "Fat lot of good that Ph.D. does me now, hm?",
+  "Why do we all have to wear these ridiculous ties?",
+  "Are you thinking what I'm thinking?",
+  "Did you have any idea they were working on this kind of stuff?",
+  "My god, what are you doing?",
+  "What the hell is this?",
+  "Have you been able to get the beverage machine to work yet?",
+  "What the hell is going on with our equipment?",
+  "Standard insertion for a nonstandard specimen.",
+  "Overhead capacitors to one oh five percent.",
+  "Take me with you! I'm the one man who knows everything!",
+  "Do you smell what I smell?",
+  "basil was here",
+  "pyrule was here",
+  "Brought to you by terrible ideas!",
+  ":catJAM:",
+  "Fresh colors, picked directly from firefox devtools!",
+  "Did you know? The",
+  "Winner!",
+  //--------------------------------------------------------------  <- max length 
+  //     **** ALL QUOTES MUST BE 63 CHARACTERS OR LESS ****
+]
+function startup() {
+  return startup_quotes[Math.floor(Math.random()*startup_quotes.length)]
+}
+exports.startup = startup

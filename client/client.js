@@ -1205,8 +1205,8 @@ socket.onmessage = (real_event) => {
         icon_message("forum", qspan('You have been removed from '), room_span(room), qspan('.'))
       }
       console.log(`You have been removed from the "` + room.name + `" room.`)
-      rooms[id] = undefined
-      session_data.room_access[data.id] = undefined
+      delete rooms[id]
+      delete session_data.room_access[data.id]
       try { sessionStorage.setItem("room_access", JSON.stringify(session_data.room_access)) } catch (err) { console.log(err) }
       set_active_room(rooms[server.main_room_id] || rooms[server.shout_room_id])
       break
