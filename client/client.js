@@ -1071,6 +1071,7 @@ socket.onmessage = (real_event) => {
     case "hello":
       user.id = data.id
       user.name = data.name
+      session_data.nickname = user.name
       if (!logging_in) { icon_message("edit", qspan('Your nickname is now '), username_span(user), qspan('.')) }
       console.log(`Your nickname has been set to "` + user.name + `".`)
       document.getElementById("title").innerText = `Vessel (${user.name})`
