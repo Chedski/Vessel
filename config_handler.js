@@ -2,9 +2,13 @@
 const fs = require('fs');
 const yaml = require('js-yaml');
 
+function log2(name, ...data) {
+  console.log(`[${new Date().toUTCString()}] [${name}] `, ...data)
+}
 
 /**
  * @type {{
+ * database: string,
  * superadmin_key: string,
  * admin_key: string,
  * mod_key: string,
@@ -24,6 +28,16 @@ const yaml = require('js-yaml');
 var config = yaml.load(fs.readFileSync('./config.yml').toString())
 
 // Use environment variables if blank strings are set
+if (config.database === "" || config.database == null) {
+  if (process.env.DATABASE) {
+    log2("Database",`Using DATABASE environment variable.`)
+    config.database = process.env.DATABASE
+  } else {
+    config.database = "sqlite://:memory:"
+    log2("Database","No database set! Using a non-persistent database.")
+  }
+} else { log2("Database",`Using config.yml database settings.` )}
+
 if (config.superadmin_key === "" || config.superadmin_key == null) {
   if (process.env.SUPERADMINKEY) {
     config.superadmin_key = process.env.SUPERADMINKEY

@@ -5,9 +5,10 @@ const http = require('http')
 const crypto = require('crypto')
 const wss = require('lup-express-ws').default(express())
 const app = wss.app
-const config = require("./config_handler").config
-
 const namegen = require('./namegen')
+/** @type {http.Server} */
+var httpserver
+
 
 /** @type {string} */
 const ver = require("./package.json").version
@@ -37,6 +38,16 @@ ${' '.repeat(Math.floor((63 - sq.length) / 2))}${sq}
 function log2(name, ...data) {
   console.log(`[${new Date().toUTCString()}] [${name}] `, ...data)
 }
+
+
+const config = require("./config_handler").config
+
+const { Sequelize, Model, DataTypes } = require('sequelize')
+var silence_db = false
+const sequelize = new Sequelize(config.database, {
+  logging: (msg) => {if (!silence_db) { log2("Database",msg) }}
+})
+
 
 
 /** These errors will be sent to clients if thrown inside of the socket event handler. */
@@ -137,7 +148,9 @@ function key_auth(user, data) {
   }
 }
 
-
+/**
+ * Represents a connected client.
+ */
 class User {
   /** @type {string} */
   id
@@ -219,6 +232,7 @@ class User {
     this.socket = socket
     var self = this
     socket.on('message', function(raw) {
+      if (shutting_down) { return }
       try {
         var parsed = JSON.parse(raw.toString())
         var event = parsed.n
@@ -284,13 +298,17 @@ class User {
               else { throw new VesselStateError("Cannot leave that room.") }
             } else { throw new VesselResourceError("Room does not exist") }
             break
+          
+          case "shutdown_server":
+            if (!self.isAdmin) { self.socket.close(); return }
+            else if (self.superadmin) { shutdown(); return }
         }
       } catch (err) {
         if (err instanceof VesselError) {
           try {
             let item = { text: err.get_client_message() }
             let msg = { items: [item] }
-            if (item.text == "You already did that." || item.text == "You are already a member of that room.") { msg.loginHide = true }
+            if (item.text == "Room does not exist" || item.text == "You already did that." || item.text == "You are already a member of that room.") { msg.loginHide = true }
             self.send("system_message", msg)
 
           } catch (err) {
@@ -352,7 +370,10 @@ class User {
   /** @param {string} name */
   set_nickname(name) {
     if (name.length <= 32 && name.length >= 1) {
+      var old_name = this.name
       this.name = name
+      
+      log2("Users", `User ${old_name} (${this.id}) has changed their nickname to ${old_name}`)
       this.send("user_update", { name: name })
     } else {
       throw new VesselLimitError("Name is too long.")
@@ -376,6 +397,63 @@ class User {
   }
 }
 
+
+// Database object definition for rooms
+var room_db_definition = {
+  id: { type: DataTypes.UUID, primaryKey: true },
+  name: { type: DataTypes.TEXT, allowNull: false },
+  adminOnly: { type: DataTypes.BOOLEAN, allowNull: false },
+  isPublic: { type: DataTypes.BOOLEAN, allowNull: false },
+  isShout: { type: DataTypes.BOOLEAN, allowNull: false },
+  isMain: { type: DataTypes.BOOLEAN, allowNull: false },
+  autoJoin: { type: DataTypes.BOOLEAN, allowNull: false },
+  disableJoinMessages: { type: DataTypes.BOOLEAN, allowNull: false },
+  disableLeaveMessages: { type: DataTypes.BOOLEAN, allowNull: false },
+  disableRoommates: { type: DataTypes.BOOLEAN, allowNull: false },
+  preventDeletion: { type: DataTypes.BOOLEAN, allowNull: false },
+  preventLeaving: { type: DataTypes.BOOLEAN, allowNull: false },
+  founder: { type: DataTypes.UUID, allowNull: false },
+  founderNick: { type: DataTypes.TEXT, allowNull: false },
+  userdata: { type: DataTypes.JSON, allowNull: false },
+}
+
+const PersistentRoom = sequelize.define("Room", room_db_definition, { paranoid: true })
+
+/** @type {boolean} */
+var shutting_down = false
+async function shutdown() {
+  shutting_down = true
+  console.log("\n") // Two blank lines
+  log2("Shutdown", "Vessel is shutting down!")
+  console.log("\n") // Two blank lines
+  
+  log2("Shutdown", "Sending a system message to all connected users.")
+  send_to_all("system_message", { items: [{text: "Server is shutting down, you will be disconnected shortly."}] })
+
+  setTimeout(() => {
+    log2("Shutdown", "Disconnecting clients.")
+    clients.forEach(c => c.socket.close())
+    log2("Shutdown", "Clients have been disconnected.")
+
+    log2("Shutdown", "Closing HTTP server.")
+    httpserver.close()
+    log2("Shutdown", "Closed.")
+  },200)
+
+  
+  log2("Shutdown", "Saving room data.")
+  var list = Object.values(rooms)
+  for (const r of list) { await r.save() }
+  log2("Shutdown", "Done saving rooms.")
+
+  setTimeout(() => {
+    process.exit()
+  },350)
+}
+
+/**
+ * Represents a single room. Rooms are essentially the same thing as channels.
+ */
 class Room {
   /** Unique room ID, as a UUID
    * @readonly
@@ -447,13 +525,16 @@ class Room {
    * @type {Object<string,any>} */
   userdata = {};
 
+  dbi;
+
   /**
    * @param {string} name
-   * @param {"public"|"unlisted"} type
+   * @param {"public"|"unlisted"|"loaded"} type
    * @param {User} [founder]
    * @param {string} [uuid_override]
+   * @param {Model<any,any>} [loaded]
    */
-  constructor(name, type, founder, uuid_override) {
+  constructor(name, type, founder, uuid_override, loaded) {
     if (founder && !founder.superadmin) {
       if (!config.allow_room_creation) throw new Error("Room creation is disabled.")
       if (name.length < 2) throw new Error("Name is too short!")
@@ -467,22 +548,53 @@ class Room {
     switch (type) {
       case "public":
         if (founder && !founder.check_permission(config.room_creation_public)) {
-          throw new Error("You are not allowed to do that!")
+          throw new VesselSecurityError("You are not allowed to do that!")
         } else {
           this.isPublic = true
           break
         }
       case "unlisted":
         if (founder && !founder.check_permission(config.room_creation_unlisted)) {
-          throw new Error("You are not allowed to do that!")
+          throw new VesselSecurityError("You are not allowed to do that!")
+        } else { break }
+      case "loaded":
+        if (founder) {
+          throw new VesselSecurityError("You are not allowed to do that!")
         } else { break }
       default:
         throw new Error("Invalid room type!")
     }
 
-    rooms[this.id] = this
-    if (founder) this.add(founder)
-    log2("Rooms", founder ? `User ${founder.name} (${founder.id}) has created the ${type} room <${this.name} {${this.id}}>.` : `The ${type} room <${this.name} {${this.id}}> has been created.`)
+    if (type == "loaded" && loaded) {
+      this.dbi = loaded
+      Object.keys(room_db_definition).forEach(k => { if (k != "id") {this[k] = loaded[k]} })
+      log2("Rooms", `The room <${this.name} {${this.id}}> has been loaded from database.`)
+      rooms[this.id] = this
+    } else {
+      var data = { id: this.id }
+      // This should get filled in automatically, I just added the ID to make ts-check shut up
+      Object.keys(room_db_definition).forEach(k => { data[k] = this[k] })
+      this.dbi = PersistentRoom.build(data)
+      
+      rooms[this.id] = this
+      if (founder) this.add(founder)
+      log2("Rooms", founder ? `User ${founder.name} (${founder.id}) has created the ${type} room <${this.name} {${this.id}}>.` : `The ${type} room <${this.name} {${this.id}}> has been created.`)
+      
+      log2("Persist",`Saving new room <${this.name} {${this.id}}> to database.`)
+      this.dbi.save()
+      log2("Persist",`Finished saving new room <${this.name} {${this.id}}> to database.`)
+    }
+  }
+
+  /**
+   * Saves the room to the database.
+   */
+  async save() {
+    log2("Persist",`Saving room <${this.name} {${this.id}}> to database.`)
+    var data = {}
+    Object.keys(room_db_definition).forEach(k => { if (k != "id") { data[k] = this[k] } })
+    await PersistentRoom.update({data}, { where: { id: this.id } })
+    log2("Persist",`Finished saving room <${this.name} {${this.id}}> to database.`)
   }
 
   /**
@@ -589,7 +701,7 @@ class Room {
   get_client_object(user) {
     var data = {}
     Object.keys(this).forEach((k) => {
-      if (typeof (k) != "function" && k != "members" && k != "muted") { data[k] = this[k] }
+      if (typeof (k) != "function" && k != "members" && k != "muted" && k != "dbi") { data[k] = this[k] }
     })
     if (user && (this.muted[user.id] || (this.adminOnly && !(user.isAdmin || user.isMod)))) { data.muted = true }
     return data
@@ -611,6 +723,7 @@ class Room {
       this.userdata[k] = data[k]
     })
     this.send_to_members("room_update", this.get_client_object())
+    this.save()
   }
 
   /**
@@ -628,6 +741,7 @@ class Room {
       this[k] = data[k]
     })
     this.send_to_members("room_update", this.get_client_object())
+    this.save()
   }
 
 
@@ -644,42 +758,101 @@ class Room {
     this.send_to_members("room_deleted", this.get_client_object())
     Object.values(this.members).forEach(u => this.remove(u))
     log2("Rooms", user ? `User ${user.name} (${user.id}) has deleted <${this.name} {${this.id}}>.` : ` <${this.name} {${this.id}}> has been deleted.`)
+    log2("Persist",`Marking room <${this.name} {${this.id}}> as deleted.`)
+    this.dbi.destroy()
+    log2("Persist",`Finished marking room <${this.name} {${this.id}}> as deleted.`)
+
+    if (Object.values(rooms).length == 0) {
+      log2("Rooms", "There are no rooms left! Onboarding needs to be run again.")
+      log2("Rooms", "Shutting down; hopefully the server's auto-restart is configured properly.")
+      httpserver.close(() => {
+        log2("Shutdown", "Shutting down; hopefully the server's auto-restart is configured properly.")
+      })
+    }
   }
 }
 
-var main_room = new Room(config.main_channel_name, "public", undefined, "27b9bef4-ffb7-451e-b010-29870760e2b1")
-main_room.isMain = true
-main_room.autoJoin = true
-main_room.disableJoinMessages = true
-main_room.disableLeaveMessages = true
-main_room.preventDeletion = true
+async function create_initial_rooms() {
+  log2("Onboarding",`No rooms found, creating default rooms.`)
 
-var shout_room = new Room(config.shout_channel_name, "public", undefined, "823d68d9-a20c-409e-b6db-12e313ed9a16")
-shout_room.isShout = true
-shout_room.adminOnly = true
-shout_room.autoJoin = true
-shout_room.disableJoinMessages = true
-shout_room.disableLeaveMessages = true
-shout_room.preventLeaving = true
-shout_room.preventDeletion = true
+  log2("Onboarding",`Creating ${config.main_channel_name}.`)
+  var main_room = new Room(config.main_channel_name, "public", undefined, "27b9bef4-ffb7-451e-b010-29870760e2b1")
+  log2("Onboarding",`Configuring ${config.main_channel_name}.`)
+  main_room.isMain = true
+  main_room.autoJoin = true
+  main_room.disableJoinMessages = true
+  main_room.disableLeaveMessages = true
+  main_room.preventDeletion = true
+  await main_room.save()
+  
+  log2("Onboarding",`Creating ${config.shout_channel_name}.`)
+  var shout_room = new Room(config.shout_channel_name, "public", undefined, "823d68d9-a20c-409e-b6db-12e313ed9a16")
+  log2("Onboarding",`Configuring ${config.shout_channel_name}.`)
+  shout_room.isShout = true
+  shout_room.adminOnly = true
+  shout_room.autoJoin = true
+  shout_room.disableJoinMessages = true
+  shout_room.disableLeaveMessages = true
+  shout_room.preventLeaving = true
+  shout_room.preventDeletion = true
+  await shout_room.save()
+  
+}
 
 
-app.ws("/ev", (s) => new User(s));
 
-(async () => {
+app.ws("/ev", (s) => {
+  if (shutting_down) { s.close() }
+  else { new User(s) }
+})
+// @ts-ignore
+log2("Socket",`Websocket server created.`)
+// The error I was getting here makes no sense.
+// Remove the @ts-ignore and you'll see what I mean.
+
+async function run() {
   var got = await import('got')
+  
+  log2("Resources",`Saving a copy of twemoji.min.js to memory...`)
+  var tmj = await got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
+  log2("Resources",`Done!`)
   app.get("/twemoji.js", (req, res) => {
-    // https://twemoji.maxcdn.com/v/latest/twemoji.min.js
-    // @ts-ignore
-    got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js").then((val) => {
-      res.setHeader("Content-Type", "text/javascript")
-      res.send(val.body)
-    }).catch((err) => {
-      res.sendStatus(500)
-      console.log(err)
-    })
+    res.setHeader("Content-Type", "text/javascript")
+    res.send(tmj.body)
   })
+  
+  log2("Persist",`Synchronizing the room model.`)
+  silence_db = true
+  await PersistentRoom.sync({ alter: true })
+  silence_db = false
+  log2("Persist",`Done!`)
+  
+  log2("Persist",`Getting rooms from database.`)
+  var roomList = await PersistentRoom.findAll()
+  log2("Persist",`Done!`)
+  if (roomList.length == 0) {
+    await create_initial_rooms()
+  } else {
+    log2("Persist",`Loading rooms...`)
+    silence_db = true
+    roomList.forEach((data) => {
+
+      if (data["id"]) {
+        var room = new Room("","loaded",undefined,data["id"],data)
+      } else {
+        log2("Persist",`A room was found with a missing ID. Destroying.`)
+        data.destroy({force: true})
+      }
+    })
+    silence_db = false
+    log2("Persist",`Done!`)
+  }
+
   app.use("/", express.static("client"))
-  app.listen(config.port)
-  log2("Socket", `Listening on port ${config.port}`)
-})()
+  log2("Server", `Starting server on port ${config.port}.`)
+  httpserver = app.listen(config.port)
+  log2("Server", `Listening on port ${config.port}!`)
+
+  process.on('SIGINT', shutdown)
+}
+run()

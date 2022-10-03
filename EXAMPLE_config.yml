@@ -28,6 +28,20 @@ welcome_message:
   - "Type /public to see a list of public rooms."
   - "You can also join public or unlisted rooms with /join."
 
+# Persistence
+database: "sqlite://data.db" # Leave as an empty string to use the DATABASE environment variable.
+# If both this^ and the DATABASE environment variable are blank, or the database is set to "sqlite://:memory:", persistence will be disabled.
+# Vessel uses Sequelize, so database must be a Sequelize-compatible URL.
+# 
+# For example:
+# sqlite://data.db - "data.db" file in Vessel's installlation folder
+# postgres://user:pass@example.com:5432/dbname - dbname on example.com, logging in with user "user" and password "pass"
+# 
+# Note: You will need to install certain additional drivers for some databases.
+# See https://sequelize.org/docs/v6/getting-started/ for more information.
+# The sqlite3 driver is installed with Vessel, so don't worry about installing that.
+
+
 # Other
 mod_key: "" # Leave as an empty string to use the MODKEY environment variable
 admin_key: "" # Leave as an empty string to use the ADMINKEY environment variable

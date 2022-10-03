@@ -1022,6 +1022,7 @@ var logging_in = false
 var was_connected = false
 var is_first_open = true
 socket.onopen = () => {
+  rooms = {}
   logging_in = true
   was_connected = true
   document.getElementById("preload_icons").hidden = true
@@ -1170,7 +1171,15 @@ socket.onmessage = (real_event) => {
           } catch (err) { console.log(err) }
         }
       }, 500)
-      setTimeout(() => { logging_in = false }, 1000)
+      setTimeout(() => {
+        logging_in = false
+        Object.keys(session_data.room_access).forEach(k => {
+          if (!rooms[k]) {
+            console.log(`room ${k} doesnt seem like it exists anymore`)
+            delete session_data.room_access[k]
+          }
+        })
+      }, 1000)
 
       break
 
