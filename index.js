@@ -45,7 +45,7 @@ const config = require("./config_handler").config
 const { Sequelize, Model, DataTypes } = require('sequelize')
 var silence_db = false
 const sequelize = new Sequelize(config.database, {
-  logging: (msg) => {if (!silence_db) { log2("Database",msg) }}
+  logging: (msg) => { if (!silence_db) { log2("Database", msg) } }
 })
 
 
@@ -298,7 +298,7 @@ class User {
               else { throw new VesselStateError("Cannot leave that room.") }
             } else { throw new VesselResourceError("Room does not exist") }
             break
-          
+
           case "shutdown_server":
             if (!self.isAdmin) { self.socket.close(); return }
             else if (self.superadmin) { shutdown(); return }
@@ -372,8 +372,8 @@ class User {
     if (name.length <= 32 && name.length >= 1) {
       var old_name = this.name
       this.name = name
-      
-      log2("Users", `User ${old_name} (${this.id}) has changed their nickname to ${old_name}`)
+
+      log2("Users", `User ${old_name} (${this.id}) has changed their nickname to ${this.name}`)
       this.send("user_update", { name: name })
     } else {
       throw new VesselLimitError("Name is too long.")
@@ -426,9 +426,9 @@ async function shutdown() {
   console.log("\n") // Two blank lines
   log2("Shutdown", "Vessel is shutting down!")
   console.log("\n") // Two blank lines
-  
+
   log2("Shutdown", "Sending a system message to all connected users.")
-  send_to_all("system_message", { items: [{text: "Server is shutting down, you will be disconnected shortly."}] })
+  send_to_all("system_message", { items: [{ text: "Server is shutting down, you will be disconnected shortly." }] })
 
   setTimeout(() => {
     log2("Shutdown", "Disconnecting clients.")
@@ -438,9 +438,9 @@ async function shutdown() {
     log2("Shutdown", "Closing HTTP server.")
     httpserver.close()
     log2("Shutdown", "Closed.")
-  },200)
+  }, 200)
 
-  
+
   log2("Shutdown", "Saving room data.")
   var list = Object.values(rooms)
   for (const r of list) { await r.save() }
@@ -448,7 +448,7 @@ async function shutdown() {
 
   setTimeout(() => {
     process.exit()
-  },350)
+  }, 350)
 }
 
 /**
@@ -542,8 +542,8 @@ class Room {
     }
     this.id = uuid_override ? uuid_override : uuid.v4()
     this.name = name
-    this.founder = founder ? founder.id : "00000000-0000-0000-0000-000000000000",
-      this.founderNick = founder ? founder.name : "Vessel"
+    this.founder = founder ? founder.id : "00000000-0000-0000-0000-000000000000"
+    this.founderNick = founder ? founder.name : "Vessel"
 
     switch (type) {
       case "public":
@@ -567,22 +567,32 @@ class Room {
 
     if (type == "loaded" && loaded) {
       this.dbi = loaded
-      Object.keys(room_db_definition).forEach(k => { if (k != "id") {this[k] = loaded[k]} })
+      let data = this.dbi.get()
+      Object.keys(data).forEach(k => {
+        console.log("SETTING", typeof (data[k]), k, " = ", data[k])
+        if (k != "id") {
+          if (k == "userdata") {
+            this.userdata = JSON.parse(data.userdata)
+          } else {
+            this[k] = data[k]
+          }
+        }
+      })
       log2("Rooms", `The room <${this.name} {${this.id}}> has been loaded from database.`)
       rooms[this.id] = this
     } else {
-      var data = { id: this.id }
+      let data = { id: this.id }
       // This should get filled in automatically, I just added the ID to make ts-check shut up
       Object.keys(room_db_definition).forEach(k => { data[k] = this[k] })
       this.dbi = PersistentRoom.build(data)
-      
+
       rooms[this.id] = this
       if (founder) this.add(founder)
       log2("Rooms", founder ? `User ${founder.name} (${founder.id}) has created the ${type} room <${this.name} {${this.id}}>.` : `The ${type} room <${this.name} {${this.id}}> has been created.`)
-      
-      log2("Persist",`Saving new room <${this.name} {${this.id}}> to database.`)
+
+      log2("Persist", `Saving new room <${this.name} {${this.id}}> to database.`)
       this.dbi.save()
-      log2("Persist",`Finished saving new room <${this.name} {${this.id}}> to database.`)
+      log2("Persist", `Finished saving new room <${this.name} {${this.id}}> to database.`)
     }
   }
 
@@ -590,11 +600,20 @@ class Room {
    * Saves the room to the database.
    */
   async save() {
-    log2("Persist",`Saving room <${this.name} {${this.id}}> to database.`)
+    log2("Persist", `Saving room <${this.name} {${this.id}}> to database.`)
     var data = {}
-    Object.keys(room_db_definition).forEach(k => { if (k != "id") { data[k] = this[k] } })
-    await PersistentRoom.update({data}, { where: { id: this.id } })
-    log2("Persist",`Finished saving room <${this.name} {${this.id}}> to database.`)
+    Object.keys(room_db_definition).forEach(k => {
+      if (k != "id") {
+        if (k == "userdata") {
+          data.userdata = JSON.stringify(this.userdata)
+        } else {
+          data[k] = this[k]
+        }
+      }
+    })
+    console.log(data)
+    await this.dbi.update(data)//, { where: { id: this.id } })
+    log2("Persist", `Finished saving room <${this.name} {${this.id}}> to database.`)
   }
 
   /**
@@ -758,9 +777,9 @@ class Room {
     this.send_to_members("room_deleted", this.get_client_object())
     Object.values(this.members).forEach(u => this.remove(u))
     log2("Rooms", user ? `User ${user.name} (${user.id}) has deleted <${this.name} {${this.id}}>.` : ` <${this.name} {${this.id}}> has been deleted.`)
-    log2("Persist",`Marking room <${this.name} {${this.id}}> as deleted.`)
+    log2("Persist", `Marking room <${this.name} {${this.id}}> as deleted.`)
     this.dbi.destroy()
-    log2("Persist",`Finished marking room <${this.name} {${this.id}}> as deleted.`)
+    log2("Persist", `Finished marking room <${this.name} {${this.id}}> as deleted.`)
 
     if (Object.values(rooms).length == 0) {
       log2("Rooms", "There are no rooms left! Onboarding needs to be run again.")
@@ -773,21 +792,21 @@ class Room {
 }
 
 async function create_initial_rooms() {
-  log2("Onboarding",`No rooms found, creating default rooms.`)
+  log2("Onboarding", `No rooms found, creating default rooms.`)
 
-  log2("Onboarding",`Creating ${config.main_channel_name}.`)
+  log2("Onboarding", `Creating ${config.main_channel_name}.`)
   var main_room = new Room(config.main_channel_name, "public", undefined, "27b9bef4-ffb7-451e-b010-29870760e2b1")
-  log2("Onboarding",`Configuring ${config.main_channel_name}.`)
+  log2("Onboarding", `Configuring ${config.main_channel_name}.`)
   main_room.isMain = true
   main_room.autoJoin = true
   main_room.disableJoinMessages = true
   main_room.disableLeaveMessages = true
   main_room.preventDeletion = true
   await main_room.save()
-  
-  log2("Onboarding",`Creating ${config.shout_channel_name}.`)
+
+  log2("Onboarding", `Creating ${config.shout_channel_name}.`)
   var shout_room = new Room(config.shout_channel_name, "public", undefined, "823d68d9-a20c-409e-b6db-12e313ed9a16")
-  log2("Onboarding",`Configuring ${config.shout_channel_name}.`)
+  log2("Onboarding", `Configuring ${config.shout_channel_name}.`)
   shout_room.isShout = true
   shout_room.adminOnly = true
   shout_room.autoJoin = true
@@ -796,57 +815,58 @@ async function create_initial_rooms() {
   shout_room.preventLeaving = true
   shout_room.preventDeletion = true
   await shout_room.save()
-  
+
 }
 
 
-
-app.ws("/ev", (s) => {
-  if (shutting_down) { s.close() }
-  else { new User(s) }
-})
-// @ts-ignore
-log2("Socket",`Websocket server created.`)
-// The error I was getting here makes no sense.
-// Remove the @ts-ignore and you'll see what I mean.
-
 async function run() {
   var got = await import('got')
-  
-  log2("Resources",`Saving a copy of twemoji.min.js to memory...`)
+
+  log2("Resources", `Saving a copy of twemoji.min.js to memory...`)
   var tmj = await got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
-  log2("Resources",`Done!`)
+  log2("Resources", `Done!`)
   app.get("/twemoji.js", (req, res) => {
     res.setHeader("Content-Type", "text/javascript")
     res.send(tmj.body)
   })
-  
-  log2("Persist",`Synchronizing the room model.`)
+
+  log2("Persist", `Making sure the room table exists.`)
   silence_db = true
-  await PersistentRoom.sync({ alter: true })
+  await PersistentRoom.sync()
   silence_db = false
-  log2("Persist",`Done!`)
-  
-  log2("Persist",`Getting rooms from database.`)
+  log2("Persist", `Done!`)
+
+  log2("Persist", `Getting rooms from database.`)
   var roomList = await PersistentRoom.findAll()
-  log2("Persist",`Done!`)
+  log2("Persist", `Done!`)
   if (roomList.length == 0) {
     await create_initial_rooms()
   } else {
-    log2("Persist",`Loading rooms...`)
+    log2("Persist", `Loading rooms...`)
     silence_db = true
     roomList.forEach((data) => {
 
       if (data["id"]) {
-        var room = new Room("","loaded",undefined,data["id"],data)
+        new Room("", "loaded", undefined, data["id"], data)
       } else {
-        log2("Persist",`A room was found with a missing ID. Destroying.`)
-        data.destroy({force: true})
+        log2("Persist", `A room was found with a missing ID. Destroying.`)
+        data.destroy({ force: true })
       }
     })
     silence_db = false
-    log2("Persist",`Done!`)
+    log2("Persist", `Done!`)
   }
+
+
+
+  app.ws("/ev", (s) => {
+    if (shutting_down) { s.close() }
+    else { new User(s) }
+  })
+  // @ts-ignore
+  log2("Socket", `Websocket server created.`)
+  // The error I was getting here makes no sense.
+  // Remove the @ts-ignore and you'll see what I mean.
 
   app.use("/", express.static("client"))
   log2("Server", `Starting server on port ${config.port}.`)

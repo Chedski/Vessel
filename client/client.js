@@ -975,6 +975,12 @@ function send(content) {
         command_modify_room_internal_data(args)
         return
 
+      case "shutdown":
+        if (user.isAdmin) {
+          socket.send(JSON.stringify({ n: "shutdown_server", d: {} }))
+          return
+        }
+
       default:
         system_message(qspan(`The command /${cmd} was not found.`))
     }
@@ -1023,6 +1029,7 @@ var was_connected = false
 var is_first_open = true
 socket.onopen = () => {
   rooms = {}
+  user.active_room = null
   logging_in = true
   was_connected = true
   document.getElementById("preload_icons").hidden = true
