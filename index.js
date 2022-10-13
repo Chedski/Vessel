@@ -569,10 +569,16 @@ class Room {
       this.dbi = loaded
       let data = this.dbi.get()
       Object.keys(data).forEach(k => {
-        console.log("SETTING", typeof (data[k]), k, " = ", data[k])
+        // console.log("SETTING", typeof (data[k]), k, " = ", data[k])
         if (k != "id") {
           if (k == "userdata") {
-            this.userdata = JSON.parse(data.userdata)
+            try {
+              this.userdata = JSON.parse(data.userdata)
+            } catch (err) {
+              log2("Rooms", `The room ${this.id}'s userdata JSON failed to load':`)
+              log2("Ro oms", data.userdata)
+            }
+
           } else {
             this[k] = data[k]
           }
@@ -583,7 +589,13 @@ class Room {
     } else {
       let data = { id: this.id }
       // This should get filled in automatically, I just added the ID to make ts-check shut up
-      Object.keys(room_db_definition).forEach(k => { data[k] = this[k] })
+      Object.keys(room_db_definition).forEach(k => {
+        if (k == "userdata") {
+          data.userdata = JSON.stringify(this.userdata)
+        } else {
+          data[k] = this[k]
+        }
+      })
       this.dbi = PersistentRoom.build(data)
 
       rooms[this.id] = this
@@ -611,7 +623,7 @@ class Room {
         }
       }
     })
-    console.log(data)
+    // console.log(data)
     await this.dbi.update(data)//, { where: { id: this.id } })
     log2("Persist", `Finished saving room <${this.name} {${this.id}}> to database.`)
   }
