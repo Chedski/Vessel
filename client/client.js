@@ -58,64 +58,86 @@ var room_delete_quotes = [
   " has been obliterated.",
 ]
 
+
+marked.use({extensions: [{
+  name: 'emoji',
+  level: 'inline',                         // This is an inline-level tokenizer
+  start(src) { return src.indexOf(':'); }, // Hint to Marked.js to stop and check for a match
+  tokenizer(src, tokens) {
+    const rule = /^:(\w+):/;               // Regex for the complete token, anchor to string start
+    const match = rule.exec(src);
+    if (match) {
+      return {                             // Token to generate
+        type: 'emoji',                     // Should match "name" above
+        raw: match[0],                     // Text to consume from the source
+        emoji: match[1]                    // Additional custom properties
+      };
+    }
+  },
+  renderer(token) {
+    return `<span className="emoji">${emoji.emojify(token.emoji)}</span>`;
+  }
+}]});
+
 // Markdown
 function md(mdText) {
 
   // first, handle syntax for code-block
-  mdText = mdText.replace(/\r\n/g, '\n')
-  mdText = mdText.replace(/\n~~~ *(.*?)\n([\s\S]*?)\n~~~/g, '<pre><code title="$1">$2</code></pre>')
-  mdText = mdText.replace(/\n``` *(.*?)\n([\s\S]*?)\n```/g, '<pre><code title="$1">$2</code></pre>')
+  // mdText = mdText.replace(/\r\n/g, '\n')
+  // mdText = mdText.replace(/\n~~~ *(.*?)\n([\s\S]*?)\n~~~/g, '<pre><code title="$1">$2</code></pre>')
+  // mdText = mdText.replace(/\n``` *(.*?)\n([\s\S]*?)\n```/g, '<pre><code title="$1">$2</code></pre>')
 
   mdText = mdText.replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
+    .replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]+/,"")
 
   // split by "pre>", skip for code-block and process normal text
-  var mdHTML = ''
-  var mdCode = mdText.split('pre>')
+  var mdHTML = marked.marked.parseInline(mdText).replace("\n","")
+  // var mdCode = mdText.split('pre>')
 
-  for (var i = 0; i < mdCode.length; i++) {
-    if (mdCode[i].substr(-2) == '</') {
-      mdHTML += '<pre>' + mdCode[i] + 'pre>'
-    } else {
-      mdHTML += mdCode[i].replace(/(.*)<$/, '$1')
-        .replace(/`(.*?)`/gm, '<code>$1</code>')
-        .replace(/\[(.*?)\]\(\)/gm, '<a href="$1" target="_blank">$1</a>')
-        .replace(/\[(.*?)\]\((.*?)\)/gm, '<a href="$2" target="_blank">$1</a>')
-        .replace(/\*\*\*(.*)\*\*\*/gm, '<b><em>$1</em></b>')
-        .replace(/\*\*(.*)\*\*/gm, '<b>$1</b>')
-        .replace(/\*([\w \d]*)\*/gm, '<em>$1</em>')
-        .replace(/___(.*)___/gm, '<b><em>$1</em></b>')
-        .replace(/__(.*?)__/gm, '<u>$1</u>')
-        .replace(/~~(.*)~~/gm, '<del>$1</del>')
-        .replace(/\^\^(.*)\^\^/gm, '<ins>$1</ins>')
-        // .replace(/\\([`_\\\*\+\-\.\(\)\[\]\{\}])/gm, '$1')
-        .replace(/(?<!["'=])http(s?:\/\/[^ ?#]*\??[^ #]*?#?[^ ]*)/gm, '<a href="http$1">http$1</a>')
-      // .replace(/^##### (.*?)\s*#*$/gm, '<h5>$1</h5>')
-      // .replace(/^#### (.*?)\s*#*$/gm, '<h4 id="$1">$1</h4>')
-      // .replace(/^### (.*?)\s*#*$/gm, '<h3 id="$1">$1</h3>')
-      // .replace(/^## (.*?)\s*#*$/gm, '<h2 id="$1">$1</h2>')
-      // .replace(/^# (.*?)\s*#*$/gm, '<h1 id="$1">$1</h1>')    
-      // .replace(/^-{3,}|^\_{3,}|^\*{3,}/gm, '<hr/>')    
-      // .replace(/``(.*?)``/gm, '<code>$1</code>' )
-      // .replace(/^\>> (.*$)/gm, '<blockquote><blockquote>$1</blockquote></blockquote>')
-      // .replace(/^\> (.*$)/gm, '<blockquote>$1</blockquote>')
-      // .replace(/<\/blockquote\>\n<blockquote\>/g, '\n<br>' )
-      // .replace(/<\/blockquote\>\n<br\><blockquote\>/g, '\n<br>' )
-      // .replace(/!\[(.*?)\]\((.*?) "(.*?)"\)/gm, '<img alt="$1" src="$2" $3 />')
-      // .replace(/!\[(.*?)\]\((.*?)\)/gm, '<img alt="$1" src="$2" />')
-      // .replace(/\[(.*?)\]\((.*?) "(.*?)"\)/gm, '<a href="$2" title="$3">$1</a>')
-      // .replace(/^[\*|+|-][ |.](.*)/gm, '<ul><li>$1</li></ul>' ).replace(/<\/ul\>\n<ul\>/g, '\n' )
-      // .replace(/^\d[ |.](.*)/gm, '<ol><li>$1</li></ol>' ).replace(/<\/ol\>\n<ol\>/g, '\n' )
-      // .replace(/_([\w \d]*)_/gm, '<em>$1</em>')
-      // .replace(/ +\n/g, '\n<br/>')
-      // .replace(/\n\s*\n/g, '\n<p>\n')
-      // .replace(/^ {4,10}(.*)/gm, '<pre><code>$1</code></pre>' )
-      // .replace(/^\t(.*)/gm, '<pre><code>$1</code></pre>' )
-      // .replace(/<\/code\><\/pre\>\n<pre\><code\>/g, '\n' )
-    }
-  }
+  // for (var i = 0; i < mdCode.length; i++) {
+  //   if (mdCode[i].substr(-2) == '</') {
+  //     mdHTML += '<pre>' + mdCode[i] + 'pre>'
+  //   } else {
+  //     mdHTML += mdCode[i].replace(/(.*)<$/, '$1')
+  //       .replace(/`(.*?)`/gm, '<code>$1</code>')
+  //       .replace(/\[(.*?)\]\(\)/gm, '<a href="$1" target="_blank">$1</a>')
+  //       .replace(/\[(.*?)\]\((.*?)\)/gm, '<a href="$2" target="_blank">$1</a>')
+  //       .replace(/\*\*\*(.*)\*\*\*/gm, '<b><em>$1</em></b>')
+  //       .replace(/\*\*(.*)\*\*/gm, '<b>$1</b>')
+  //       .replace(/\*([\w \d]*)\*/gm, '<em>$1</em>')
+  //       .replace(/___(.*)___/gm, '<b><em>$1</em></b>')
+  //       .replace(/__(.*?)__/gm, '<u>$1</u>')
+  //       .replace(/~~(.*)~~/gm, '<del>$1</del>')
+  //       .replace(/\^\^(.*)\^\^/gm, '<ins>$1</ins>')
+  //       // .replace(/\\([`_\\\*\+\-\.\(\)\[\]\{\}])/gm, '$1')
+  //       .replace(/(?<!["'=])http(s?:\/\/[^ ?#]*\??[^ #]*?#?[^ ]*)/gm, '<a href="http$1">http$1</a>')
+  //     // .replace(/^##### (.*?)\s*#*$/gm, '<h5>$1</h5>')
+  //     // .replace(/^#### (.*?)\s*#*$/gm, '<h4 id="$1">$1</h4>')
+  //     // .replace(/^### (.*?)\s*#*$/gm, '<h3 id="$1">$1</h3>')
+  //     // .replace(/^## (.*?)\s*#*$/gm, '<h2 id="$1">$1</h2>')
+  //     // .replace(/^# (.*?)\s*#*$/gm, '<h1 id="$1">$1</h1>')    
+  //     // .replace(/^-{3,}|^\_{3,}|^\*{3,}/gm, '<hr/>')    
+  //     // .replace(/``(.*?)``/gm, '<code>$1</code>' )
+  //     // .replace(/^\>> (.*$)/gm, '<blockquote><blockquote>$1</blockquote></blockquote>')
+  //     // .replace(/^\> (.*$)/gm, '<blockquote>$1</blockquote>')
+  //     // .replace(/<\/blockquote\>\n<blockquote\>/g, '\n<br>' )
+  //     // .replace(/<\/blockquote\>\n<br\><blockquote\>/g, '\n<br>' )
+  //     // .replace(/!\[(.*?)\]\((.*?) "(.*?)"\)/gm, '<img alt="$1" src="$2" $3 />')
+  //     // .replace(/!\[(.*?)\]\((.*?)\)/gm, '<img alt="$1" src="$2" />')
+  //     // .replace(/\[(.*?)\]\((.*?) "(.*?)"\)/gm, '<a href="$2" title="$3">$1</a>')
+  //     // .replace(/^[\*|+|-][ |.](.*)/gm, '<ul><li>$1</li></ul>' ).replace(/<\/ul\>\n<ul\>/g, '\n' )
+  //     // .replace(/^\d[ |.](.*)/gm, '<ol><li>$1</li></ol>' ).replace(/<\/ol\>\n<ol\>/g, '\n' )
+  //     // .replace(/_([\w \d]*)_/gm, '<em>$1</em>')
+  //     // .replace(/ +\n/g, '\n<br/>')
+  //     // .replace(/\n\s*\n/g, '\n<p>\n')
+  //     // .replace(/^ {4,10}(.*)/gm, '<pre><code>$1</code></pre>' )
+  //     // .replace(/^\t(.*)/gm, '<pre><code>$1</code></pre>' )
+  //     // .replace(/<\/code\><\/pre\>\n<pre\><code\>/g, '\n' )
+  //   }
+  // }
 
 
   return mdHTML
@@ -159,8 +181,9 @@ function qspan(text, ...classes) {
 function qspan_md(text, ...classes) {
   if (classes[0] instanceof Array) { classes = classes[0] }
   var span = document.createElement("span")
+  span.classList.add("markdown")
   classes.forEach((c) => { span.classList.add(c) })
-  span.innerHTML = md(text)//.replace(/\n/g,"")).replace(/^<p>/,"").replace(/<\/p>$/,"")
+  span.innerHTML = md(text)//.replace(/\n/g,"").replace(/^<p>/,"").replace(/<\/p>$/,"")
   try { twemoji.parse(span, { folder: 'svg', ext: '.svg' }) } catch (err) { /*console.log(err)*/ }
   return span
 }

@@ -834,13 +834,13 @@ async function create_initial_rooms() {
 async function run() {
   var got = await import('got')
 
-  log2("Resources", `Saving a copy of twemoji.min.js to memory...`)
-  var tmj = await got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
+  log2("Resources", `Saving copies of client JS scripts to memory...`)
+  var js_twemoji = await got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
+  var js_marked = await got.got("https://cdn.jsdelivr.net/npm/marked/marked.min.js")
   log2("Resources", `Done!`)
-  app.get("/twemoji.js", (req, res) => {
-    res.setHeader("Content-Type", "text/javascript")
-    res.send(tmj.body)
-  })
+
+  app.get("/twemoji.js", (req, res) => { res.setHeader("Content-Type", "text/javascript").send(js_twemoji.body) })
+  app.get("/marked.js", (req, res) => { res.setHeader("Content-Type", "text/javascript").send(js_marked.body) })
 
   log2("Persist", `Making sure the room table exists.`)
   silence_db = true
