@@ -6,9 +6,18 @@ const crypto = require('crypto')
 const wss = require('lup-express-ws').default(express())
 const app = wss.app
 const namegen = require('./namegen')
+const fs = require('fs');
+const util = require('util');
 /** @type {http.Server} */
 var httpserver
 
+var logFile = fs.createWriteStream('log/log.txt', { flags: 'a' });
+  // Or 'w' to truncate the file every time the process starts.
+var logStdout = process.stdout;
+console.log = function () {
+  logFile.write(util.format.apply(null, arguments) + '\n');
+  logStdout.write(util.format.apply(null, arguments) + '\n');
+}
 
 /** @type {string} */
 const ver = require("./package.json").version
@@ -35,6 +44,7 @@ ${' '.repeat(Math.floor((63 - sq.length) / 2))}${sq}
  * @param {string} name The specific part of Vessel that logged this message
  * @param {...any} data
  */
+
 function log2(name, ...data) {
   console.log(`[${new Date().toUTCString()}] [${name}] `, ...data)
 }
@@ -45,7 +55,8 @@ const config = require("./config_handler").config
 const { Sequelize, Model, DataTypes } = require('sequelize')
 var silence_db = false
 const sequelize = new Sequelize(config.database, {
-  logging: (msg) => { if (!silence_db) { log2("Database", msg) } }
+  // logging: (msg) => { if (!silence_db) { log2("Database", msg) } }
+  logging: () => {}
 })
 
 
@@ -250,7 +261,7 @@ class User {
             if (typeof (data.name) == "string") { new Room(data.name, data.type, self) }
             else { throw new VesselDataError("Name must be a string") }
             break
-
+_
           case "change_name":
             if (typeof data === 'string') { self.set_nickname(data) }
             else { throw new VesselDataError("Data must be a string") }
@@ -285,6 +296,13 @@ class User {
             let pubrooms = []
             Object.values(rooms).forEach((room) => { if (room.isPublic) { pubrooms.push(room.get_client_object(self)) } })
             self.send("public_room_list", pubrooms)
+            break
+
+          case "get_full_room_list":
+            if (!self.isAdmin) { self.socket.close(); return }
+            let allrooms = []
+            Object.values(rooms).forEach((room) => { allrooms.push(room.get_client_object(self)) })
+            self.send("full_room_list", allrooms)
             break
 
           case "join_room":
@@ -576,7 +594,7 @@ class Room {
               this.userdata = JSON.parse(data.userdata)
             } catch (err) {
               log2("Rooms", `The room ${this.id}'s userdata JSON failed to load':`)
-              log2("Ro oms", data.userdata)
+              log2("Rooms", data.userdata)
             }
 
           } else {
@@ -804,10 +822,10 @@ class Room {
 }
 
 async function create_initial_rooms() {
-  log2("Onboarding", `No rooms found, creating default rooms.`)
+  log2("Onboarding", `No public rooms found, creating default rooms.`)
 
   log2("Onboarding", `Creating ${config.main_channel_name}.`)
-  var main_room = new Room(config.main_channel_name, "public", undefined, "27b9bef4-ffb7-451e-b010-29870760e2b1")
+  var main_room = new Room(config.main_channel_name, "public", undefined)//"27b9bef4-ffb7-451e-b010-29870760e2b1")
   log2("Onboarding", `Configuring ${config.main_channel_name}.`)
   main_room.isMain = true
   main_room.autoJoin = true
@@ -817,7 +835,7 @@ async function create_initial_rooms() {
   await main_room.save()
 
   log2("Onboarding", `Creating ${config.shout_channel_name}.`)
-  var shout_room = new Room(config.shout_channel_name, "public", undefined, "823d68d9-a20c-409e-b6db-12e313ed9a16")
+  var shout_room = new Room(config.shout_channel_name, "public", undefined)//, "823d68d9-a20c-409e-b6db-12e313ed9a16")
   log2("Onboarding", `Configuring ${config.shout_channel_name}.`)
   shout_room.isShout = true
   shout_room.adminOnly = true
@@ -835,11 +853,11 @@ async function run() {
   var got = await import('got')
 
   log2("Resources", `Saving copies of client JS scripts to memory...`)
-  var js_twemoji = await got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
+  //var js_twemoji = await got.got("https://twemoji.maxcdn.com/v/latest/twemoji.min.js")
   var js_marked = await got.got("https://cdn.jsdelivr.net/npm/marked/marked.min.js")
   log2("Resources", `Done!`)
 
-  app.get("/twemoji.js", (req, res) => { res.setHeader("Content-Type", "text/javascript").send(js_twemoji.body) })
+  //app.get("/twemoji.js", (req, res) => { res.setHeader("Content-Type", "text/javascript").send(js_twemoji.body) })
   app.get("/marked.js", (req, res) => { res.setHeader("Content-Type", "text/javascript").send(js_marked.body) })
 
   log2("Persist", `Making sure the room table exists.`)
@@ -851,25 +869,28 @@ async function run() {
   log2("Persist", `Getting rooms from database.`)
   var roomList = await PersistentRoom.findAll()
   log2("Persist", `Done!`)
-  if (roomList.length == 0) {
+  var main_counter = 0
+  var shout_counter = 0
+  Object.values(rooms).forEach((room) => { 
+    if (room.isPublic && room.isMain && room.autoJoin) { main_counter++ } 
+    if (room.isPublic && room.isShout && room.autoJoin) { shout_counter++ } 
+  })
+  if (main_counter == 0 && shout_counter == 0) {
     await create_initial_rooms()
-  } else {
-    log2("Persist", `Loading rooms...`)
-    silence_db = true
-    roomList.forEach((data) => {
-
-      if (data["id"]) {
-        new Room("", "loaded", undefined, data["id"], data)
-      } else {
-        log2("Persist", `A room was found with a missing ID. Destroying.`)
-        data.destroy({ force: true })
-      }
-    })
-    silence_db = false
-    log2("Persist", `Done!`)
   }
+  log2("Persist", `Loading rooms...`)
+  silence_db = true
+  roomList.forEach((data) => {
 
-
+    if (data["id"]) {
+      new Room("", "loaded", undefined, data["id"], data)
+    } else {
+      log2("Persist", `A room was found with a missing ID. Destroying.`)
+      data.destroy({ force: true })
+    }
+  })
+  silence_db = false
+  log2("Persist", `Done!`)
 
   app.ws("/ev", (s) => {
     if (shutting_down) { s.close() }

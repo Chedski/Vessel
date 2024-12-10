@@ -7,8 +7,8 @@ var user = {
 }
 var rooms = {}
 
-const january_proxy_url = "https://chedski.net/january/proxy?url="
-const january_embed_url = "https://chedski.net/january/embed?url="
+const january_proxy_url = "https://chedski.net/janu/proxy?url="
+const january_embed_url = "https://chedski.net/janu/embed?url="
 
 var session_data = {
   auth_key: null,
@@ -782,6 +782,12 @@ function command_list_public_rooms(args) {
 }
 
 /** @param {String} args */
+function command_list_all_rooms(args) {
+  socket.send(JSON.stringify({ n: "get_full_room_list", d: args }))
+  document.getElementById("message_content").value = ""
+}
+
+/** @param {String} args */
 function command_list_rooms(args) {
   var memrooms = Object.values(rooms)
   var si = memrooms.length == 1
@@ -942,6 +948,11 @@ function send(content) {
       case "publicrooms":
       case "lsp":
         command_list_public_rooms(args)
+        return
+
+      case "lsa":
+      case "allrooms":
+        command_list_all_rooms(args)
         return
 
       case "deleteroom":
@@ -1162,6 +1173,20 @@ socket.onmessage = (real_event) => {
         }
         system_message(...items)
       }
+      break
+
+
+    case "full_room_list":
+      var pubrooms = data
+      var si = pubrooms.length == 1
+      var items = [qspan(`There ${si ? 'is' : 'are'} ${pubrooms.length} room${si ? '' : 's'}: `)]
+      for (let i = 0; i < pubrooms.length; i++) {
+        const room = pubrooms[i]
+        if (i != 0) { items.push(qspan(", ")) }
+        items.push(room_span(room))
+      }
+      system_message(...items)
+
       break
 
     case "public_room_list":
